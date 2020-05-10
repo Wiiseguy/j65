@@ -191,6 +191,10 @@ function testAssemble() {
 
 		// Reset
 		prg.setLabel('RESET');
+			// Test relative labels to the future (works)
+			//prg.add('BNE', prg.getLabelRel('POEP'));
+			//prg.add('INX');
+			//prg.setLabel('POEP');
 		prg.import(macro_Reset);
 
 		// Load palette		
@@ -250,9 +254,9 @@ function testAssemble() {
 
 	// Write the PRG right after header
 	buf.seek(0x0010); 
-	writeBytes(buf, prg.getBuffer());
+	writeBytes(buf, prg.build());
 
-	fs.writeFileSync("rom-sprites.nes", rom);
+	fs.writeFileSync("rom-sprites-test.nes", rom);
 }
 
 function C6502_NES(prg) {
@@ -317,9 +321,25 @@ function C6502_NES(prg) {
 			prg.add('BNE', prg.getLabelRel(`Load_${dataLabel}_Loop`));	
 	};
 
-	
+	this.div = function(numerator, denominator) {
+		let L1 = prg.createUniqueLabelName('DIV');
+		let L2 = prg.createUniqueLabelName('DIV');
+		prg.add('LDA_IMM', 0);
+		prg.add('LDX_IMM', 8);
+		prg.add('ASL', numerator);
+		prg.setLabel(L1);
+		prg.add('ROL');
+		prg.add('CMP', denominator);
+		prg.add('BCC', prg.getLabelRel('L2'));
+		prg.add('SBC', denominator);
+		prg.setLabel(L2);
+		prg.add('ROL', numerator);
+		prg.add('DEX');
+		prg.add('BNE', prg.getLabelRel('L1'))
+	};
 
 }
+
 
 function C6502_Program(size) {
 	if(!size) size = 0x4000; // 16K default
@@ -351,63 +371,135 @@ function C6502_Program(size) {
 		'INX': 			{ op: 0xe8, size: 1 },
 	};
 
-	let labels = {};
-
 	// Vars
+	let labels = {};
+	let labelCounter = 0;	
 	let origin = 0; // used for labels
 	let assembly = [];
 
 	function Instruction(name, data) {
-		// Keep buf as internal cursor to resolve labels 
+		// TODO: Keep buf as internal cursor to resolve labels 
+		this.name = name;
+		this.data = data;
 	}
 
-	function Label() {
-		
+	function DataInsertion(bytes) {
+		this.data = bytes;
 	}
 
+	function Label(name) {
+		this.name = name;
+	}
+
+	function RelativeLabel(name) {
+		this.name = name;
+	}
+
+	function CursorMover(addr) {
+		this.address = addr;
+	}
+
+	function getLabelAddress(name) {
+		let label = labels[name];
+		if(label === undefined) throw new RangeError(`Unknown label: ${name}`);
+		console.log("Fetched label:", name, '=', label.toString(16));
+		return label;
+	}
+
+	function getRelativeLabelAddress(name) {
+		let addr = getLabelAddress(name);
+		let relative = addr - origin - buf.getPos() - 2; // offset -2 to take own instruction + this relative addr into account
+		console.log("Fetched relative label:", name, '=', relative.toString(16));
+		return relative & 0xff;
+	}
+
+	this.build = function() {
+		buf.setPos(0);
+		prg.fill(0xff); // reset buffer
+
+		for(let a of assembly) {
+			if(a instanceof Instruction) {
+				let instr = instructions[a.name];
+				let data = a.data;				
+				if(data instanceof Label) {
+					data = getLabelAddress(data.name);
+				} else if(data instanceof RelativeLabel) {
+					data = getRelativeLabelAddress(data.name);
+				}
+
+				let expectedNumBytes = instr.size;
+				let bytesToWrite = new Uint8Array(expectedNumBytes);
+				bytesToWrite[0] = instr.op; // first byte is the op code
+				for(let i = 0; i < expectedNumBytes-1; i++) {
+					bytesToWrite[i+1] = data >> (8*i) & 0xff; // shift data to lower endian format
+				}
+				console.log("  ", a.name, data || '', "->", /*bytesToWrite,*/ bytesToWrite[0].toString(16), uintLeArrToString(bytesToWrite.slice(1)), instr.desc ? `(${instr.desc})` : '');
+				writeBytes(buf, bytesToWrite);
+			} else if(a instanceof DataInsertion) {
+				let data = a.data;
+				if(data instanceof Label) {
+					let b16 = getLabelAddress(data.name);
+					let tb = Buffer.alloc(2);
+					tb.writeUInt16LE(b16);
+					data = tb;
+				} else if(data instanceof RelativeLabel) {
+					data = getRelativeLabelAddress(data.name);
+				}
+				console.log(`- putting ${data.length} bytes`, data, 'at', buf.getPos().toString(16));
+				let u8a = new Uint8Array(data);
+				writeBytes(buf, u8a);
+			} else if(a instanceof CursorMover) {
+				let addr = a.address;
+				console.log("- moved to", addr.toString(16));
+				buf.setPos(addr);
+			}
+		}
+
+		return buf.buffer;
+	};
 
 	this.add = function(name, data) {
 		let instr = instructions[name];
 		if(!instr) throw RangeError(`Unknown instruction: ${name}`);
-		let expectedNumBytes = instr.size;
-		let bytesToWrite = new Uint8Array(expectedNumBytes);
-		bytesToWrite[0] = instr.op; // first byte is the op code
-		for(let i = 0; i < expectedNumBytes-1; i++) {
-			bytesToWrite[i+1] = data >> (8*i) & 0xff; // shift data to lower endian format
-		}
-		console.log("  ", name, data || '', "->", /*bytesToWrite,*/ bytesToWrite[0].toString(16), uintLeArrToString(bytesToWrite.slice(1)), instr.desc ? `(${instr.desc})` : '');
-		writeBytes(buf, bytesToWrite);
+		buf.skip(instr.size);
+		assembly.push(new Instruction(name, data));
 	};
 
 	this.put = function(data) {
 		if(data >= 0 && data <= 0xff) {
-			console.log(`- put8: putting 0x${data.toString(16)} at 0x${buf.getPos().toString(16)}`);
-			buf.writeByte(data);
+			buf.skip(1);
+			assembly.push(new DataInsertion(data));
 		} else {
 			throw new RangeError(`put: ${data} is not between 0 and ${0xff}`);
 		}
 	};
 
 	this.put16 = function(data) {
-		console.log(`- put16: putting 0x${data.toString(16)} at 0x${buf.getPos().toString(16)}`);
-		buf.writeUInt16LE(data);
+		buf.skip(2);
+		assembly.push(new DataInsertion(data));
 	};
 
 	this.putBytes = function(arr) {
-		console.log(`- putting ${arr.length} bytes`, arr);
-		let u8a = new Uint8Array(arr);
-		writeBytes(buf, arr);		
+		buf.skip(arr.length);
+		assembly.push(new DataInsertion(arr));
 	};
 
 	this.include = function(filePath) {
 		let fileBuffer = fs.readFileSync(filePath);
-		writeBytes(buf, fileBuffer);
+		buf.skip(fileBuffer.length);
+		assembly.push(new DataInsertion(fileBuffer));
 	};
 
 	this.import = function(importFn) {
 		console.log("IMPORT:", importFn.name);
 		importFn(this);
 		console.log("END IMPORT:", importFn.name);
+	};
+
+	this.createUniqueLabelName = function(name) {
+		let lbl = `${name}_${labelCounter}`;
+		labelCounter = labelCounter + 1;
+		return lbl;
 	};
 
 	this.setLabel = function(name) {
@@ -417,16 +509,11 @@ function C6502_Program(size) {
 	};
 
 	this.getLabel = function(name) {
-		let label = labels[name];
-		if(label === undefined) throw new RangeError(`Unknown label: ${name}`);
-		console.log("Fetched label:", name, '=', label.toString(16));
-		return label;
+		return new Label(name);
 	};
 
 	this.getLabelRel = function(name) {
-		let addr = this.getLabel(name);
-		let relative = addr - buf.getPos() - 2; // offset -2 to take own instruction + this relative addr into account
-		return relative & 0xff;
+		return new RelativeLabel(name);		
 	};
 
 	this.setOrigin = function(addr) {
@@ -434,9 +521,9 @@ function C6502_Program(size) {
 	};
 
 	// Moves relative to origin
-	this.moveTo = function(addr) {
+	this.moveTo = function(addr) {		
 		buf.setPos(addr - origin);
-		console.log("Moved to", addr.toString(16), "translating internally to:", buf.getPos().toString(16));
+		assembly.push(new CursorMover(buf.getPos()));		
 	};
 
 	this.getBuffer = function() {
