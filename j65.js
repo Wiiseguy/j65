@@ -199,7 +199,7 @@ function testAssemble() {
 		nes.uploadPPU(prg.getLabel('PaletteData'), palette.length);
 
 		// Load sprites to RAM
-		nes.copy(SPR_START, prg.getLabel('SpriteData'), sprites.length);
+		meta.copy(SPR_START, prg.getLabel('SpriteData'), sprites.length);
 
 		// Setup backgrounds
 		nes.setPPUAddress(0x2000); 
@@ -325,6 +325,10 @@ function testAssemble() {
 			0x80, 0x33, 0x00, 0x88, // sprite 1
 			0x88, 0x34, 0x00, 0x80, // sprite 2
 			0x88, 0x35, 0x00, 0x88, // sprite 3
+			0, 0, 0, 0, // sprite 4
+			0, 0, 0, 0, // sprite 4
+			0x88, 0x35, 0x00, 0x88, // sprite 4
+			0, 0, 0, 0, // sprite 4
 		];
 
 		const SP = 0x24;
@@ -336,26 +340,70 @@ function testAssemble() {
 			0x19, 0x1a, 0x1b, 0x1c,	0x1d, 0x1e, 0x1f, 0x20,	0x21, 0x22, 0x23	
 		];
 
+		prg.setVar('paramA');
+
 		// Set palette data
 		prg.setLabel("PaletteData");
-		prg.putBytes(palette);
+			prg.putBytes(palette);
 
 		// Set sprite data
 		prg.setLabel("SpriteData");
-		prg.putBytes(sprites);
+			prg.putBytes(sprites);
 
 		// Set text data
 		prg.setLabel("AsciiData");
-		prg.putBytes(asciiMap);
+			prg.putBytes(asciiMap);
 
 		// Set the text
 		let str = "HELLO WORLD";
 		prg.setLabel("MyString");
-		prg.put(str.length);
-		prg.putBytes(str);
+			prg.put(str.length);
+			prg.putBytes(str);
+
+		// Write text as sprites
+		prg.setLabel('WriteText');
+			prg.add('LDA_ABS', prg.getLabel('MyString'));
+			//prg.add('TAY') // Transfer length of string from A into Y
+			prg.add('LDX_IMM', 0);
+			prg.add('LDY_IMM', 1);
+			meta.setImm(prg.var('paramA'), 0x48); // paramA is used for text X, start at 48
+			prg.setLabel('WriteText_Loop');
+				prg.add('INX');
+				prg.add('TXA');
+				meta.push(); // save X
+				prg.add('TYA');
+				meta.push(); // save Y				
+				prg.add('LDA_ABS_X', prg.getLabel('MyString'));
+				prg.add('ADC_IMM', -asciiOffset);
+				prg.add('TAY');
+				prg.add('LDA_ABS_Y', prg.getLabel("AsciiData"))
+				prg.add('TAX');
+				meta.pop(); // pop Y
+				prg.add('TAY');
+				prg.add('TXA'); 
+				prg.add('STA_ABS_Y', SPR_START); // set tile
+				prg.add('DEY');	// go back one byte
+				prg.add('LDA_ABS', prg.var('paramA')); // also use paramA for Y, because of the 8 sprites per scanline limit
+				prg.add('STA_ABS_Y', SPR_START); // set Y pos
+				prg.add('INY'); // tile
+				prg.add('INY'); // attr
+				prg.add('LDA_IMM', 0);
+				prg.add('STA_ABS_Y', SPR_START); // set attr
+				prg.add('INY');
+				prg.add('LDA_ABS', prg.var('paramA'));
+				prg.add('STA_ABS_Y', SPR_START); // set X pos
+				prg.add('ADC_IMM', 8);
+				prg.add('STA_ABS', prg.var('paramA'));
+				prg.add('INY');
+				prg.add('INY');
+				meta.pop(); // pop X
+				prg.add('TAX');
+				prg.add('CPX_ABS', prg.getLabel('MyString'));
+				prg.add('BNE', prg.getLabelRel('WriteText_Loop'));
+			prg.add('RTS');
 
 		// Import subroutines
-		nes.importUtilities();
+		nes.importUtilities();		
 		
 		prg.setLabel('ResetAndCleanupPPU');
 			meta.setImm(PPU_CTRL, 0b10010000); // enable NMI, sprites from Pattern Table 0 (bit 3), bg (bit 4) generate NMI at start of vblank (bit 7)
@@ -366,25 +414,26 @@ function testAssemble() {
 
 		// Reset
 		prg.setLabel('RESET');
+		meta.jsr('WriteText');
 		nes.reset();
 
-		// Load palette		
+		// Load palette
 		nes.setPPUAddress(0x3f00); // The palettes start at PPU address $3F00 and $3F10.
 		nes.uploadPPU(prg.getLabel('PaletteData'), palette.length);
 
 		// Load sprites to RAM
-		nes.copy(SPR_START, prg.getLabel('SpriteData'), sprites.length);
+		meta.copy(SPR_START, prg.getLabel('SpriteData'), sprites.length);
 
 		// Cleanup
 		meta.jsr('ResetAndCleanupPPU');
 		
 		// NMI
-		prg.setLabel('NMI');
-		
+		prg.setLabel('NMI');		
 
 		// Controller
 		nes.readControllers(BUTTONS_1, BUTTONS_2);
 
+		meta.jsr('WriteText');
 
 		// Transfer sprite data at the end of NMI
 		meta.setImm(SPR_ADDR, 0x00);
@@ -475,6 +524,19 @@ function C6502_Meta(prg) {
 		prg.add('JSR', prg.getLabel(labelName));
 	};
 
+	// Mid level
+	this.copy = function(dstAddr, srcAddr, dataLength) {
+		let newLabel = prg.createUniqueLabelName(`copy_Loop`);
+		// TODO: push/pop X?
+		prg.add('LDX_IMM', 0); // start at 0
+		prg.setLabel(newLabel);
+			prg.add('LDA_ABS_X', srcAddr); // load data from address SpriteData + x
+			prg.add('STA_ABS_X', dstAddr); // store into RAM (0200 + x)
+			prg.add('INX');
+			prg.add('CPX_IMM', dataLength);
+			prg.add('BNE', prg.getLabelRel(newLabel));	
+	};
+
 }
 
 function C6502_NES(prg) {
@@ -502,8 +564,7 @@ function C6502_NES(prg) {
 		}
 	};
 
-	// Low-level 
-	
+	// Low-level 	
 	
 	// Mid-level
 	this.setPPUAddress = function(addr) {
@@ -529,18 +590,6 @@ function C6502_NES(prg) {
 			prg.add('INX');										// set index to next byte
 			prg.add('CPX_IMM', dataLength);					// if X = 32, all is copied
 			prg.add('BNE', prg.getLabelRel(newLabel));		
-	};
-
-	this.copy = function(dstAddr, srcAddr, dataLength) {
-		let newLabel = prg.createUniqueLabelName(`copy_Loop`);
-		// TODO: push/pop X?
-		prg.add('LDX_IMM', 0); // start at 0
-		prg.setLabel(newLabel);
-			prg.add('LDA_ABS_X', srcAddr); // load data from address SpriteData + x
-			prg.add('STA_ABS_X', dstAddr); // store into RAM (0200 + x)
-			prg.add('INX');
-			prg.add('CPX_IMM', dataLength);
-			prg.add('BNE', prg.getLabelRel(newLabel));	
 	};
 
 	this.clearRAM = function() {
@@ -630,22 +679,29 @@ function C6502_Program(size) {
 		'LSR': 			{ op: 0x4a, size: 1, desc: 'Shift One Bit Right (Accumulator)' },	
 		'JMP_ABS': 		{ op: 0x4c, size: 3 },
 		'RTS': 			{ op: 0x60, size: 1, desc: 'Return from Subroutine' },
-		'PLA': 			{ op: 0x48, size: 1, desc: 'Pull Accumulator from Stack' },
+		'PLA': 			{ op: 0x68, size: 1, desc: 'Pull Accumulator from Stack' },
 		'ADC_IMM': 		{ op: 0x69, size: 2 },
 		'ROR': 			{ op: 0x6a, size: 1, desc: 'Rotate One Bit Right (Accumulator)' },
 		'ROR_ABS':		{ op: 0x6e, size: 3, desc: 'Rotate One Bit Right (Memory)' },
 		'SEI': 			{ op: 0x78, size: 1, desc: 'Set Interrupt Disable Status' },
 		'DEY': 			{ op: 0x88, size: 1, desc: 'Decrement Index Y by One' },
+		'TXA': 			{ op: 0x8a, size: 1 },
 		'STA_ABS': 		{ op: 0x8d, size: 3 },
 		'STX_ABS':		{ op: 0x8e, size: 3 },
 		'BCC': 			{ op: 0x90, size: 2, desc: 'Branch on Carry Clear' },
+		'TYA': 			{ op: 0x98, size: 1 },
+		'STA_ABS_Y':	{ op: 0x99, size: 3 },
 		'TXS': 			{ op: 0x9a, size: 1, desc: 'Transfer Index X to Stack Register (X -> SP)' },
 		'STA_ABS_X':	{ op: 0x9d, size: 3 },
+		'LDY_IMM': 		{ op: 0xa0, size: 2 },
 		'LDX_IMM': 		{ op: 0xa2, size: 2 },
+		'TAY': 			{ op: 0xa8, size: 1 },
 		'LDA_IMM': 		{ op: 0xa9, size: 2 },
+		'TAX': 			{ op: 0xaa, size: 1 },
 		'LDA_ABS': 		{ op: 0xad, size: 3 },
 		'LDX_ABS': 		{ op: 0xae, size: 3 },
 		'LDA_ABS_X': 	{ op: 0xbd, size: 3 },
+		'LDA_ABS_Y': 	{ op: 0xb9, size: 3 },
 		'INY': 			{ op: 0xc8, size: 1 },
 		'DEX': 			{ op: 0xca, size: 1, desc: 'Decrement Index X by One' },
 		'CMP_ABS':		{ op: 0xcd, size: 3, desc: 'Compare Memory with Accumulator' },
@@ -655,6 +711,7 @@ function C6502_Program(size) {
 		'CPX_IMM': 		{ op: 0xe0, size: 2, desc: 'Compare value and Index X' },
 		'INX': 			{ op: 0xe8, size: 1 },
 		'NOP': 			{ op: 0xea, size: 1, desc: 'No Operation' },
+		'CPX_ABS': 		{ op: 0xec, size: 3, desc: 'Compare value at address and Index X' },
 		'INC_ABS':		{ op: 0xee, size: 3, desc: 'Increment Memory by One' },
 		'SBC_ABS':		{ op: 0xed, size: 3, desc: 'Subtract Memory from Accumulator with Borrow' },
 		'BEQ': 			{ op: 0xf0, size: 2, desc: 'Branch on Result Zero' },
@@ -663,6 +720,8 @@ function C6502_Program(size) {
 	// Vars
 	let labels = {};
 	let labelCounter = 0;	
+	let vars = {};
+	let varsCounter = 0;
 	let origin = 0; // used for labels
 	let assembly = [];
 
@@ -732,9 +791,9 @@ function C6502_Program(size) {
 					tb.writeUInt16LE(b16);
 					data = tb;
 				} else if(data instanceof RelativeLabel) {
-					data = getRelativeLabelAddress(data.name);
+					data = [getRelativeLabelAddress(data.name)];
 				}
-				console.log(`- putting ${data.length} bytes`, data, 'at', buf.getPos().toString(16));
+				console.log(`- putting ${data.length} bytes`, data.map(d => String.fromCharCode(d)).join('').slice(0, 32), data, 'at', buf.getPos().toString(16));
 				let u8a = new Uint8Array(data);
 				writeBytes(buf, u8a);
 			} else if(a instanceof CursorMover) {
@@ -757,7 +816,7 @@ function C6502_Program(size) {
 	this.put = function(data) {
 		if(data >= 0 && data <= 0xff) {
 			buf.skip(1);
-			assembly.push(new DataInsertion(data));
+			assembly.push(new DataInsertion([data]));
 		} else {
 			throw new RangeError(`put: ${data} is not between 0 and ${0xff}`);
 		}
@@ -765,6 +824,8 @@ function C6502_Program(size) {
 
 	this.put16 = function(data) {
 		buf.skip(2);
+		let b16 = Buffer.alloc(2);
+		b16.writeUInt16LE(data);
 		assembly.push(new DataInsertion(data));
 	};
 
@@ -805,6 +866,16 @@ function C6502_Program(size) {
 
 	this.getLabelRel = function(name) {
 		return new RelativeLabel(name);		
+	};
+
+	this.setVar = function(name) {
+		vars[name] = varsCounter;
+		varsCounter = varsCounter + 1;
+		return vars[name];
+	};
+
+	this.var = function(name) {
+		return vars[name];
 	};
 
 	this.setOrigin = function(addr) {
