@@ -1,4 +1,5 @@
 *.nes
+*.65
 node_modules
 .vscode
 .vs/slnx.sqlite

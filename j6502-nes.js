@@ -1,3 +1,5 @@
+const fs = require('fs');
+const StreamBuffer = require('streambuf');
 const C6502_Program = require('./j6502');
 const C6502_Meta = require('./j6502-meta');
 
@@ -147,6 +149,60 @@ function C6502_NES(prg) {
 		}
 	}
 
+	this.writeFile = function(fileName) {
+		let bin = prg.build();
+
+		// Create the ROM file
+		const SIZE_HEADER = 0x10;
+		const SIZE_PRG = 0x8000;
+		const SIZE_CHR = 0x2000;
+		let fileSize = SIZE_HEADER + SIZE_PRG + SIZE_CHR;
+		let rom = Buffer.alloc(fileSize);
+		rom.fill(0xff);
+		let sb = StreamBuffer(rom);
+
+		// Header (16 bytes) https://wiki.nesdev.com/w/index.php/INES
+		sb.writeString("NES");
+		sb.writeByte(0x1a); // MS-DOS EOF
+		sb.writeByte(0x01); // Size of PRG ROM in 16KB units
+		sb.writeByte(0x01); // Size of CHR ROM in 8KB units (Value 0 means the board uses CHR RAM)
+		sb.writeByte(0x00); // Flags 6 - Mapper, mirroring, battery, trainer
+
+		// Write the actual program right after the ROM header
+		bin.copy(rom, 0x10);
+
+		fs.writeFileSync(fileName, rom);	
+	};
+
 }
+
+C6502_NES.prototype.SPR_START 		= SPR_START;
+C6502_NES.prototype.PPU_CTRL		= PPU_CTRL;
+C6502_NES.prototype.PPU_MASK		= PPU_MASK;
+C6502_NES.prototype.PPU_STATUS		= PPU_STATUS;
+C6502_NES.prototype.SPR_ADDR		= SPR_ADDR;
+C6502_NES.prototype.SPR_DATA		= SPR_DATA;
+C6502_NES.prototype.PPU_SCROLL		= PPU_SCROLL;
+C6502_NES.prototype.PPU_ADDR		= PPU_ADDR;
+C6502_NES.prototype.PPU_DATA		= PPU_DATA;
+
+C6502_NES.prototype.SPR_DMA			= SPR_DMA;
+C6502_NES.prototype.JOYPAD			= JOYPAD;
+C6502_NES.prototype.JOYPAD_1		= JOYPAD_1;
+C6502_NES.prototype.JOYPAD_2		= JOYPAD_2;
+
+C6502_NES.prototype.BTN_A			= BTN_A;
+C6502_NES.prototype.BTN_B			= BTN_B;
+C6502_NES.prototype.BTN_SELECT  	= BTN_SELECT;
+C6502_NES.prototype.BTN_START		= BTN_START;
+C6502_NES.prototype.BTN_UP			= BTN_UP;
+C6502_NES.prototype.BTN_DOWN		= BTN_DOWN;
+C6502_NES.prototype.BTN_LEFT		= BTN_LEFT;
+C6502_NES.prototype.BTN_RIGHT   	= BTN_RIGHT;
+C6502_NES.prototype.BTN_AB			= BTN_AB;
+C6502_NES.prototype.BTN_UPLEFT  	= BTN_UPLEFT;
+C6502_NES.prototype.BTN_UPRIGHT 	= BTN_UPRIGHT;
+C6502_NES.prototype.BTN_DOWNLEFT	= BTN_DOWNLEFT;
+C6502_NES.prototype.BTN_DOWNRIGHT	= BTN_DOWNRIGHT;
 
 module.exports = C6502_NES;

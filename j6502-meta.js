@@ -25,19 +25,19 @@ function C6502_Meta(prg) {
 	};	
 
 	// Divides numerator by denominator, saves result in numerator address
-	this.div = function(numerator, denominator) {
+	this.div = function(numeratorAddr, denominatorAddr) {
 		let L1 = prg.createUniqueLabelName('L1');
 		let L2 = prg.createUniqueLabelName('L2');
 		prg.add('LDA_IMM', 0);
 		prg.add('LDX_IMM', 8);
-		prg.add('ASL_ABS', numerator);
+		prg.add('ASL_ABS', numeratorAddr);
 		prg.setLabel(L1);
 		prg.add('ROL');
-		prg.add('CMP_ABS', denominator);
+		prg.add('CMP_ABS', denominatorAddr);
 		prg.add('BCC', prg.getLabelRel(L2));
-		prg.add('SBC_ABS', denominator);
+		prg.add('SBC_ABS', denominatorAddr);
 		prg.setLabel(L2);
-		prg.add('ROL_ABS', numerator);
+		prg.add('ROL_ABS', numeratorAddr);
 		prg.add('DEX');
 		prg.add('BNE', prg.getLabelRel(L1))
 	};
