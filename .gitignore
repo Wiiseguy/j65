@@ -1,6 +1,6 @@
+node_modules
 *.nes
 *.65
-node_modules
 .vscode
 .vs/slnx.sqlite
 .vs/6502/v16/.suo
