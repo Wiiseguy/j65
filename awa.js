@@ -3,7 +3,7 @@
     
     15-02-2021: Started
     
-    TODO 15-02-2021: npm link zoals in photo-fix
+    TODO 15-02-2021: npm link like in photo-fix
 */
 
 let tests = [];

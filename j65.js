@@ -2,8 +2,6 @@
 	6502 js assembler
 
 	03-05-2020: Started
-	14-02-2021: Split test programs up into files
-
 */
 
 const fs = require('fs');
