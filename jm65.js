@@ -166,8 +166,8 @@ function C6502_MemoryBus() {
 function C6502_GenericStorage(size = 0x2000) { // default is 0x2000 = 8192 (8K)
     const ram = Buffer.alloc(size);
     
-    this.connect = function(memBus, start=0, end=ram.length) {
-        memBus.connect(this, start, end, start);
+    this.connect = function(memBus, start=0) {
+        memBus.connect(this, start, ram.length + start, start);
     };
 
     this.write = function(addr, val) {
