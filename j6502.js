@@ -1,3 +1,8 @@
+/*
+	6502 js assembler
+
+	03-05-2020: Started
+*/
 const fs = require('fs');
 const StreamBuffer = require('streambuf');
 
