@@ -1,4 +1,14 @@
+const IMM_MATCH = /^#\$?([0-9a-f]{1,2}|[0-9]{1,3})$/;
+const ZP_MATCH = /^\$[0-9a-f]{1,2}$/;
+const ZP_X_MATCH = /^\$[0-9a-f]{1,2},x$/;
+const ABS_MATCH = /^\$[0-9a-f]{3,4}$/;
+const ABS_X_MATCH = /^\$[0-9a-f]{3,4},x$/;
+const ABS_Y_MATCH = /^\$[0-9a-f]{3,4},y$/;
+const IND_X_MATCH = /^\(\$[0-9a-f]{1,2},x\)$/;
+const IND_Y_MATCH = /^\(\$[0-9a-f]{1,2}\),y$/;
+
 const instructions = {
+    'BRK':          { op: 0x00, size: 1, asm: 'brk', desc: 'Break' },
     'ASL_ABS': 		{ op: 0x0e, size: 3, desc: 'Shift Left One Bit (Memory)' },
     'ORA_IMM':		{ op: 0x09, size: 2, desc: 'OR Memory with Accumulator' },
     'BPL': 			{ op: 0x10, size: 2, desc: 'Branch on Result Plus (N == 0)' },
@@ -28,14 +38,18 @@ const instructions = {
     'TXS': 			{ op: 0x9a, size: 1, desc: 'Transfer Index X to Stack Register (X -> SP)' },
     'STA_ABS_X':	{ op: 0x9d, size: 3 },
     'LDY_IMM': 		{ op: 0xa0, size: 2 },
+    'LDA_IND_X': 	{ op: 0xa1, size: 2, asm: 'lda', match: IND_X_MATCH },
     'LDX_IMM': 		{ op: 0xa2, size: 2 },
+    'LDA_ZP': 		{ op: 0xa5, size: 2, asm: 'lda', match: ZP_MATCH }, 
     'TAY': 			{ op: 0xa8, size: 1 },
-    'LDA_IMM': 		{ op: 0xa9, size: 2 },
+    'LDA_IMM': 		{ op: 0xa9, size: 2, asm: 'lda', match: IMM_MATCH },
     'TAX': 			{ op: 0xaa, size: 1 },
-    'LDA_ABS': 		{ op: 0xad, size: 3 },
+    'LDA_ABS': 		{ op: 0xad, size: 3, asm: 'lda', match: ABS_MATCH },
     'LDX_ABS': 		{ op: 0xae, size: 3 },
-    'LDA_ABS_X': 	{ op: 0xbd, size: 3 },
-    'LDA_ABS_Y': 	{ op: 0xb9, size: 3 },
+    'LDA_IND_Y': 	{ op: 0xb1, size: 2, asm: 'lda', match: IND_Y_MATCH },
+    'LDA_ZP_X': 	{ op: 0xb5, size: 2, asm: 'lda', match: ZP_X_MATCH },
+    'LDA_ABS_X': 	{ op: 0xbd, size: 3, asm: 'lda', match: ABS_X_MATCH},
+    'LDA_ABS_Y': 	{ op: 0xb9, size: 3, asm: 'lda', match: ABS_Y_MATCH },
     'INY': 			{ op: 0xc8, size: 1 },
     'DEX': 			{ op: 0xca, size: 1, desc: 'Decrement Index X by One' },
     'CMP_ABS':		{ op: 0xcd, size: 3, desc: 'Compare Memory with Accumulator' },

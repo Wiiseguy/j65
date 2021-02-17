@@ -13,6 +13,23 @@ let t = {
         if(actual != expected) {
             throw new Error(`Expected ${expected}, got ${actual}`);
         }
+    },
+    not(actual, expected) {
+        if(actual == expected) {
+            throw new Error(`Expected something other than ${expected}, but got ${actual}`);
+        }
+    },
+    true(actual) {
+        expected = true;
+        if(actual !== expected) {
+            throw new Error(`Expected ${expected}, got ${actual}`);
+        }
+    },
+    false(actual) {
+        expected = false;
+        if(actual !== expected) {
+            throw new Error(`Expected ${expected}, got ${actual}`);
+        }
     }
 }
 

@@ -185,6 +185,10 @@ function C6502_Program(size) {
 		assembly.push(new CursorMover(bufPos));		
 	};
 
+	this.getAssembly = function() {
+		return assembly;
+	};
+
 	this.writeFile = function(fileName) {
 		let prgBuf = this.build();
 		fs.writeFileSync(fileName, prgBuf);
