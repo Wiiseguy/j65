@@ -1,4 +1,4 @@
-const test = require('./awa')
+const test = require('aqa')
 
 const C6502_Program = require('./j6502');
 const C6502_Meta = require('./j6502-meta');

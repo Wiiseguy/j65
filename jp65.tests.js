@@ -1,4 +1,4 @@
-const test = require('./awa')
+const test = require('aqa')
 
 const JP65 = require('./jp65');
 
