@@ -200,7 +200,7 @@ function main(args) {
 
     // Include CHR
     prg.moveTo(0xc000);
-    prg.include('mario.chr');
+    prg.include('gfx.chr');
     
     nes.writeFile("nes-sprites.nes");
 }

@@ -1,5 +1,5 @@
-const C6502_Program = require('./j6502');
-const C6502_Meta = require('./j6502-meta');
+const C6502_Program = require('../j6502');
+const C6502_Meta = require('../j6502-meta');
 
 // Program entry
 main(process.argv);
