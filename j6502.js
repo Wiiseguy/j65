@@ -79,7 +79,7 @@ function C6502_Program(size) {
 					bytesToWrite[i+1] = data >> (8*i) & 0xff; // shift data to lower endian format
 				}
 				//console.log("  ", a.name, data || '', "->", /*bytesToWrite,*/ bytesToWrite[0].toString(16), uintLeArrToString(bytesToWrite.slice(1)), instr.desc ? `(${instr.desc})` : '');
-				writeBytes(buf, bytesToWrite);
+				buf.write(Buffer.from(bytesToWrite));
 			} else if(a instanceof DataInsertion) {
 				let data = a.data;
 				if(data instanceof Label) {
@@ -92,7 +92,7 @@ function C6502_Program(size) {
 				}
 				//console.log(`- putting ${data.length} bytes`, data.map(d => String.fromCharCode(d)).join('').slice(0, 32), data, 'at', buf.getPos().toString(16));
 				let u8a = new Uint8Array(data);
-				writeBytes(buf, u8a);
+				buf.write(Buffer.from(u8a));
 			} else if(a instanceof CursorMover) {
 				let addr = a.address;
 				//console.log("- moved to", addr.toString(16));
@@ -197,13 +197,6 @@ function C6502_Program(size) {
 
 function uintLeArrToString(uarr) {
 	return [...uarr].reverse().map(a => a.toString(16).padStart(2, '0')).join('');
-}
-
-function writeBytes(sb, arr) {
-	//console.log("- writing", arr.length, 'bytes');
-	for(let i=0; i < arr.length; i++) {
-		sb.writeByte(arr[i]);
-	}
 }
 
 module.exports = C6502_Program;
