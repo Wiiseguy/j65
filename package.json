@@ -4,12 +4,12 @@
   "description": "6502 assembler",
   "main": "j65.js",
   "scripts": {
-    "test": "node jp65.tests.js"
+    "test": "aqa"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "aqa": "^0.1.2",
-    "streambuf": "^1.1.0"
+    "aqa": "^0.2.0",
+    "streambuf": "^1.1.2"
   }
 }
