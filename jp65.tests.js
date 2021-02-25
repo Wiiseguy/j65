@@ -107,7 +107,7 @@ test('Syntax - all syntax flavors', t => {
 })
 
 
-test('Syntax - all syntax flavors', t => {
+test('Syntax - labels', t => {
     // Parse
     let p = new JP();
     let prg = p.parse([
