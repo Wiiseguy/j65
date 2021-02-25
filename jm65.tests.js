@@ -6,22 +6,45 @@ const JM65 = require('./jm65');
 
 const JM = JM65.C6502_Emulator;
 
-test('Simple LDA', t => {
+test('LDA flags', t => {
     // Create rom
     let prg = new C6502_Program(0x10);
     //let meta = new C6502_Meta(prg);
-    prg.add('LDA_IMM', 0x99);
-    //meta.setImm(0x4000, 0x99);
+    prg.add('LDA_IMM', 0x00);
+    prg.add('LDA_IMM', 0x79);
+    prg.add('LDA_IMM', 0x80);
+    prg.add('LDA_IMM', 0xff);
     let rom = prg.build();
 
     // Run rom
     let sut = new JM();
-    sut.load(rom);
-    sut.run();
+    sut.load(rom);    
 
     // Assert
-    let s = sut.getStatus();
-    t.is(s.A, 0x99);
+    let s;
+    sut.step();
+    s = sut.getStatus();
+    t.is(s.A, 0x00);
+    t.is(s.S.N, 0x00);
+    t.is(s.S.Z, 0x01);
+
+    sut.step();
+    s = sut.getStatus();
+    t.is(s.A, 0x79);
+    t.is(s.S.N, 0x00);
+    t.is(s.S.Z, 0x00);
+
+    sut.step();
+    s = sut.getStatus();
+    t.is(s.A, 0x80);
+    t.is(s.S.N, 0x01);
+    t.is(s.S.Z, 0x00);
+
+    sut.step();
+    s = sut.getStatus();
+    t.is(s.A, 0xff);
+    t.is(s.S.N, 0x01);
+    t.is(s.S.Z, 0x00);
 })
 
 test('Simple write to custom memory', t => {

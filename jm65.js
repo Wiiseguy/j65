@@ -3,6 +3,11 @@
     
     14-02-2021: Started
     
+    $00-ff = zero page
+    $100-1ff = stack
+    $FFFA-FFFB - NMI vector
+    $FFFC-FFFD - RESET vector
+    $FFFE-FFFF - IRQ/BRK vector
 */
 
 const fs = require('fs');
@@ -18,10 +23,16 @@ Object.entries(C6502_Instructions).forEach(([name, val]) => {
 function C6502_Emulator() {
     let prg = null;
 
+    // Pins
+    let halted = true;
+
     // Registers
     let A = 0x00;
     let X = 0x00;
     let Y = 0x00;
+
+    // Hidden register
+    let L = 0x00; // Last op result
 
     // Stack pointer
     let SP = 0x00;
@@ -52,6 +63,7 @@ function C6502_Emulator() {
         return { A, X, Y, SP, PC, S: {...S} };
     };
 
+    // TODO: replace with memory map ($FFFC/FFFD reset vector)
     this.load = function(buf) {
         prg = buf;
         //console.log("Loaded:", prg.length);
@@ -60,8 +72,14 @@ function C6502_Emulator() {
     this.run = function() {
         //printState();
         let instr;
-        while(instr = getNextInstr()) {
-            handleInstr(instr);
+        halted = false;
+        while(halted === false) {
+            instr = getNextInstr();
+            if(instr) {
+                handleInstr(instr);
+            } else {
+                break;
+            }
         }
     };
 
@@ -76,12 +94,19 @@ function C6502_Emulator() {
         return memBus;
     };
 
+
+
     function handleInstr(instr) {
         let n = instr.name;
 
         switch(n) {
+            case 'BRK':
+                halted = true;
+                PC = PC + 1;
+                break;
             case 'LDA_IMM':
-                A = getNextByte();
+                L = A = getNextByte();
+                
                 break;
             case 'LDA_ABS':
                 A = memBus.read(getNextAddress());
@@ -93,7 +118,14 @@ function C6502_Emulator() {
                 console.log(" Unhandled:", n);
         }
 
+        updateLFlags();
+
         //printState();
+    }
+
+    function updateLFlags() {
+        S.N = L >= 0x80 ? 1 : 0;
+        S.Z = L === 0 ? 1 : 0;
     }
 
     function getNextInstr() {
@@ -143,7 +175,6 @@ function C6502_MemoryBus() {
     };
 
     this.write = function(addr, val) {
-        //console.log("OK??????????", addr, val, handlers)
         for(let h of handlers) {
             const [handler, start, end, offset] = h;
             if(addr >= start && addr < end) {

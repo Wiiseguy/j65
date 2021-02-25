@@ -15,6 +15,7 @@ test('Syntax - all syntax flavors', t => {
         'lda #257', 
         'lda #$3',  
         'lda #$10', 
+        'lda #%10101010',
 
         'lda $5 ; comment',       // LDA ZP
         'lda $5',
@@ -55,6 +56,7 @@ test('Syntax - all syntax flavors', t => {
         ['LDA_IMM',     1],
         ['LDA_IMM',     3],
         ['LDA_IMM',     16],
+        ['LDA_IMM',     170],
 
         ['LDA_ZP',      5],
         ['LDA_ZP',      5],
@@ -90,7 +92,7 @@ test('Syntax - all syntax flavors', t => {
 
     // Assert
     let a = prg.getAssembly();
-    console.log("Assembly:", a);
+    //console.log("Assembly:", a);
 
     const assert_a = (i, name, data) => {
         //console.log(i)
@@ -101,5 +103,41 @@ test('Syntax - all syntax flavors', t => {
     t.is(a.length, expected.length);
 
     expected.forEach((e,i) => assert_a(i, e[0], e[1]));
+
+})
+
+
+test('Syntax - all syntax flavors', t => {
+    // Parse
+    let p = new JP();
+    let prg = p.parse([
+        'lda #$01',
+        'test_label:',
+        'lda #$02',
+        'bne test_label'
+    ].join('\n'))
+
+    const expected = [
+        ['LDA_IMM',     1],
+        ['LDA_IMM',     2],
+        ['BNE',     1],
+    ];
+
+    // Assert
+    let a = prg.getAssembly();
+    let b = prg.build(true);
+    console.log("Assembly:", b);
+
+    let bne = a[2];
+    t.is(bne.name, 'BNE');
+    t.is(bne.data.name, 'test_label');
+
+    let expectedProgram = [
+        0xa9, 0x01, // lda #$01
+        0xa9, 0x02, // lda #$02
+        0xd0, 0xfc,  // bne -3
+        0x00
+    ];
+    t.true(Buffer.from(expectedProgram).equals(b));
 
 })

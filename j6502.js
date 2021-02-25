@@ -43,10 +43,10 @@ function C6502_Program(size) {
 		this.address = addr;
 	}
 
-	this.build = function() {
+	this.build = function(clamp=false) {
 		let prg = Buffer.alloc(size);
 		let buf = StreamBuffer(prg);
-		prg.fill(0xff); // reset buffer
+		prg.fill(0x00); // reset buffer
 
 		function getLabelAddress(name) {
 			let label = labels[name];
@@ -98,6 +98,10 @@ function C6502_Program(size) {
 				//console.log("- moved to", addr.toString(16));
 				buf.setPos(addr);
 			}
+		}
+
+		if(clamp) {
+			prg = prg.slice(0, buf.getPos()+1);
 		}
 
 		return prg;
@@ -153,7 +157,7 @@ function C6502_Program(size) {
 
 	this.setLabel = function(name) {
 		if(labels[name] !== undefined) throw new RangeError(`Label redefinition: ${name}`);
-		labels[name] = bufPos + origin;
+		labels[name] = bufPos + origin; // TODO: add origin at build, so origin can also be set later?
 		//console.log("Added label:", name, 'at', labels[name].toString(16));
 	};
 

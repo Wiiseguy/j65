@@ -1,4 +1,5 @@
-const IMM_MATCH = /^#\$?([0-9a-f]{1,2}|[0-9]{1,3})$/;
+const IMM_MATCH = /^#(\$[0-9a-f]{1,2}|%[0-1]{1,8}|[0-9]{1,3})$/;
+const REL_MATCH = /^\S+$/;
 const ZP_MATCH = /^\$[0-9a-f]{1,2}$/;
 const ZP_X_MATCH = /^\$[0-9a-f]{1,2},x$/;
 const ABS_MATCH = /^\$[0-9a-f]{3,4}$/;
@@ -8,11 +9,23 @@ const IND_X_MATCH = /^\(\$[0-9a-f]{1,2},x\)$/;
 const IND_Y_MATCH = /^\(\$[0-9a-f]{1,2}\),y$/;
 
 const instructions = {
-    'BRK':          { op: 0x00, size: 1, asm: 'brk', desc: 'Break' },
-    'ASL_ABS': 		{ op: 0x0e, size: 3, desc: 'Shift Left One Bit (Memory)' },
-    'ORA_IMM':		{ op: 0x09, size: 2, desc: 'OR Memory with Accumulator' },
-    'BPL': 			{ op: 0x10, size: 2, desc: 'Branch on Result Plus (N == 0)' },
-    'JSR': 			{ op: 0x20, size: 3, desc: 'Jump to New Location Saving Return Address' },
+    // 00
+    'BRK':          { op: 0x00, size: 1, asm: 'brk', match: null, desc: 'Break' },
+    'ORA_IND_X':    { op: 0x01, size: 2, asm: 'ora', match: IND_X_MATCH, desc: 'OR Memory with Accumulator' },
+    // Unused: 0x02 - 0x04
+    'ORA_ZP':       { op: 0x05, size: 2, asm: 'ora', match: ZP_MATCH, desc: 'OR Memory with Accumulator' },
+    'ASL_ZP': 		{ op: 0x06, size: 2, asm: 'asl', match: ZP_MATCH, desc: 'Shift Left One Bit (Memory)' },
+    // Unused: 0x07
+    'PHP':          { op: 0x08, size: 1, asm: 'php', match: null, desc: 'Push Processor Status on Stack' },
+    'ORA_IMM':		{ op: 0x09, size: 2, asm: 'ora', match: IMM_MATCH, desc: 'OR Memory with Accumulator' },
+    'ASL':   		{ op: 0x0a, size: 1, asm: 'asl', match: null, desc: 'Shift Left One Bit (Accumulator)' },
+    // Unused: 0x0b - 0x0c
+    'ORA_ABS':		{ op: 0x0d, size: 3, asm: 'ora', match: ABS_MATCH, desc: 'OR Memory with Accumulator' },
+    'ASL_ABS': 		{ op: 0x0e, size: 3, asm: 'asl', match: null, desc: 'Shift Left One Bit (Memory)' },
+
+    // 10
+    'BPL': 			{ op: 0x10, size: 2, asm: 'bpl', match: ZP_MATCH, desc: 'Branch on Result Plus (N == 0)' },
+    'JSR': 			{ op: 0x20, size: 3, desc: 'Jump to New Location Saving Return Address' }, // TODO FROM HERE 22-02-2021
     'AND_IMM':		{ op: 0x29, size: 2, desc: 'AND Memory with Accumulator' },
     'ROL': 			{ op: 0x2a, size: 1, desc: 'Rotate One Bit Left (Accumulator)' },
     'BIT_ABS':		{ op: 0x2c, size: 3, desc: 'Test Bits in Memory with Accumulator' },
@@ -53,7 +66,7 @@ const instructions = {
     'INY': 			{ op: 0xc8, size: 1 },
     'DEX': 			{ op: 0xca, size: 1, desc: 'Decrement Index X by One' },
     'CMP_ABS':		{ op: 0xcd, size: 3, desc: 'Compare Memory with Accumulator' },
-    'BNE': 			{ op: 0xd0, size: 2, desc: 'Branch on Result not Zero' },
+    'BNE': 			{ op: 0xd0, size: 2, asm: 'bne', match: REL_MATCH, desc: 'Branch on Result not Zero' },
     'CLD': 			{ op: 0xd8, size: 1, desc: 'Clear Decimal Mode' },
     'DEC_ABS':		{ op: 0xce, size: 3, desc: 'Decrement Memory by One' },
     'CPX_IMM': 		{ op: 0xe0, size: 2, desc: 'Compare value and Index X' },

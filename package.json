@@ -4,12 +4,17 @@
   "description": "6502 assembler",
   "main": "j65.js",
   "scripts": {
-    "test": "aqa"
+    "test": "aqa",
+    "watch:test": "aqa --watch"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "aqa": "^0.2.0",
+    "aqa": "^0.4.0",
     "streambuf": "^1.1.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Wiiseguy/j65.git"
   }
 }

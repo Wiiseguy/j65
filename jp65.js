@@ -31,7 +31,7 @@ function matchAsm(asm, param) {
         param = param.toLowerCase();
         matched = instr_arr.find(i => i.asm === asm && param.match(i.match));
     } else {
-        matched = instr_arr.find(i => i.asm === asm);
+        matched = instr_arr.find(i => i.asm === asm && i.match == null);
     }
     return matched;
 }
@@ -44,7 +44,14 @@ function unpackNumber(str, size) {
         str = str.substr(1);
         num = parseInt(str, 16);
     } 
-    // TODO binary
+    else if(str[0] === '%') { // TODO: add test case to Syntax flavors
+        str = str.substr(1);
+        num = parseInt(str, 2);
+    }
+    else if(str[0].match(/\D/)) { // \D = non-numeric
+        // Probably a label
+        return str;
+    }
     else {
         num = parseInt(str, 10);
     }
@@ -74,17 +81,33 @@ function C6502_Parser() {
             l = l.trimEnd();
 
             let tokens = l.split(/\s+/); // Split on whitespaces
-            let param = tokens.slice(1).join('');
 
-            let matched = matchAsm(tokens[0], param);
-
-            //console.log(l, param, matched);
-            if(matched) {
-                let data;
-                if(param) {
-                    data = unpackNumber(param, matched.size-1);
+            let isLabel = tokens[0].endsWith(':');
+            if(isLabel) {
+                // TODO: allow label and instr on one line (LABEL_A: ror)
+                let label = tokens[0].substr(0, tokens[0].length-1);
+                prg.setLabel(label);
+            } else {
+                let param = tokens.slice(1).join('');
+                let matched = matchAsm(tokens[0], param);
+                
+                if(matched) {
+                    let data;
+                    if(param) {
+                        data = unpackNumber(param, matched.size-1);
+                    }
+                    //console.log("matched:", l, param, matched, 'unpacked:', data, typeof data);
+                    if(typeof data === 'string') {
+                        // Label
+                        let len = matched.size-1;
+                        if(len === 1) {
+                            data = prg.getLabelRel(data);
+                        } else {
+                            data = prg.getLabel(data);
+                        }
+                    }
+                    prg.add(matched.name, data);
                 }
-                prg.add(matched.name, data);
             }
         });
 
