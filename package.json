@@ -17,6 +17,6 @@
     "url": "git+https://github.com/Wiiseguy/j65.git"
   },
   "devDependencies": {
-    "aqa": "^0.4.0"
+    "aqa": "^1.1"
   }
 }

@@ -12,7 +12,7 @@
 
 const fs = require('fs');
 const StreamBuffer = require('streambuf');
-const C6502_Instructions = require('./j6502-instr');
+const C6502_Instructions = require('./j6502-instr').Instructions;
 
 let instr_lookup = {};
 Object.entries(C6502_Instructions).forEach(([name, val]) => {

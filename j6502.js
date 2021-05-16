@@ -6,7 +6,7 @@
 const fs = require('fs');
 const StreamBuffer = require('streambuf');
 
-const C6502_Instructions = require('./j6502-instr');
+const C6502_Instructions = require('./j6502-instr').Instructions;
 
 function C6502_Program(size) {
 	if(!size) size = 0x4000; // 16K default
@@ -101,7 +101,7 @@ function C6502_Program(size) {
 		}
 
 		if(clamp) {
-			prg = prg.slice(0, buf.getPos()+1);
+			prg = prg.slice(0, buf.getPos());
 		}
 
 		return prg;

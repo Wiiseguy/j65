@@ -106,6 +106,31 @@ test('Syntax - all syntax flavors', t => {
 
 })
 
+test('Endianess', t => {
+    // Parse
+    let p = new JP();
+    let prg = p.parse([
+        'lda $4401',
+        'brk'
+    ].join('\n'));
+
+    // Assert
+    let a = prg.getAssembly();
+    let b = prg.build(true);
+
+    let bne = a[2];
+    t.deepEqual(a, [
+        { name:"LDA_ABS", data: 0x4401 },
+        { name:"BRK" }
+    ]);
+
+    let expectedProgram = [
+        0xad, 0x01, 0x44, // lda $4401
+        0x00 // brk
+    ];
+    t.deepEqual(b, Buffer.from(expectedProgram));
+
+})
 
 test('Syntax - labels', t => {
     // Parse
@@ -114,19 +139,14 @@ test('Syntax - labels', t => {
         'lda #$01',
         'test_label:',
         'lda #$02',
-        'bne test_label'
+        'bne test_label',
+        'bne $fb',
+        'brk'
     ].join('\n'))
-
-    const expected = [
-        ['LDA_IMM',     1],
-        ['LDA_IMM',     2],
-        ['BNE',     1],
-    ];
 
     // Assert
     let a = prg.getAssembly();
     let b = prg.build(true);
-    console.log("Assembly:", b);
 
     let bne = a[2];
     t.is(bne.name, 'BNE');
@@ -136,8 +156,8 @@ test('Syntax - labels', t => {
         0xa9, 0x01, // lda #$01
         0xa9, 0x02, // lda #$02
         0xd0, 0xfc,  // bne -3
+        0xd0, 0xfb,  // bne -4
         0x00
     ];
-    t.true(Buffer.from(expectedProgram).equals(b));
-
+    t.deepEqual(b, Buffer.from(expectedProgram));
 })

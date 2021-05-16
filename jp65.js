@@ -7,7 +7,7 @@
 
 const fs = require('fs');
 const StreamBuffer = require('streambuf');
-const C6502_Instructions = require('./j6502-instr');
+const C6502_Instructions = require('./j6502-instr').Instructions;
 const C6502_Program = require('./j6502');
 
 let instr_lookup = {};
@@ -88,7 +88,7 @@ function C6502_Parser() {
                 let label = tokens[0].substr(0, tokens[0].length-1);
                 prg.setLabel(label);
             } else {
-                let param = tokens.slice(1).join('');
+                let param = tokens.slice(1).join(''); // ["lda", "$aa02,", "x"] -> "$aa02,x"
                 let matched = matchAsm(tokens[0], param);
                 
                 if(matched) {
