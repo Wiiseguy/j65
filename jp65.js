@@ -13,11 +13,9 @@ const C6502_Program = require('./j6502');
 let instr_lookup = {};
 let instr_arr = [];
 Object.entries(C6502_Instructions).forEach(([name, val]) => {
-    if(val.asm) {
-        let o = {name, ...val};
-        instr_arr.push(o);
-        //instr_lookup[val.name] = o;
-    }
+    let o = {name, ...val};
+    instr_arr.push(o);
+    //instr_lookup[val.name] = o;
 });
 
 //console.log(instr_lookup);
@@ -66,6 +64,15 @@ function C6502_Parser() {
     this.parse = function(lines) {
         const prg = new C6502_Program(); // TODO: determine size?
 
+        const handleDirective = tokens => {
+            let directive = tokens[0].slice(1);
+            switch(directive) {
+                case 'org':
+                    prg.setLabelOrigin(unpackNumber(tokens[1], 2))
+                    break;
+            }
+        };
+
         // Pre-handle lines
         if(typeof lines === 'string') {
             lines = lines.split('\n');
@@ -74,7 +81,7 @@ function C6502_Parser() {
             .map(l => l.trim()) // Trim lines
             .filter(l => l !== ''); // Remove empty lines
 
-        lines.forEach(l => {
+        lines.forEach((l,li) => {
             // Cut off comment
             let commentIdx = l.indexOf(';');
             if(commentIdx >= 0) l = l.substr(0, commentIdx);
@@ -82,31 +89,38 @@ function C6502_Parser() {
 
             let tokens = l.split(/\s+/); // Split on whitespaces
 
-            let isLabel = tokens[0].endsWith(':');
-            if(isLabel) {
-                // TODO: allow label and instr on one line (LABEL_A: ror)
-                let label = tokens[0].substr(0, tokens[0].length-1);
-                prg.setLabel(label);
+            let isDirective = tokens[0].startsWith('.');
+            if(isDirective) {                
+                handleDirective(tokens);
             } else {
-                let param = tokens.slice(1).join(''); // ["lda", "$aa02,", "x"] -> "$aa02,x"
-                let matched = matchAsm(tokens[0], param);
-                
-                if(matched) {
-                    let data;
-                    if(param) {
-                        data = unpackNumber(param, matched.size-1);
-                    }
-                    //console.log("matched:", l, param, matched, 'unpacked:', data, typeof data);
-                    if(typeof data === 'string') {
-                        // Label
-                        let len = matched.size-1;
-                        if(len === 1) {
-                            data = prg.getLabelRel(data);
-                        } else {
-                            data = prg.getLabel(data);
+                let isLabel = tokens[0].endsWith(':');
+                if(isLabel) {
+                    // TODO: allow label and instr on one line (LABEL_A: ror)
+                    let label = tokens[0].substr(0, tokens[0].length-1);
+                    prg.setLabel(label);
+                } else {
+                    let param = tokens.slice(1).join(''); // ["lda", "$aa02,", "x"] -> "$aa02,x"
+                    let matched = matchAsm(tokens[0], param);
+                    
+                    if(matched) {
+                        let data;
+                        if(param) {
+                            data = unpackNumber(param, matched.size-1);
                         }
+                        //console.log("matched:", l, param, matched, 'unpacked:', data, typeof data);
+                        if(typeof data === 'string') {
+                            // Label
+                            let len = matched.size-1;
+                            if(len === 1) {
+                                data = prg.getLabelRel(data);
+                            } else {
+                                data = prg.getLabel(data);
+                            }
+                        }
+                        prg.add(matched.name, data);
+                    } else {
+                        throw new Error(`No instruction could be matched with: "${l}" (line ${li})`)
                     }
-                    prg.add(matched.name, data);
                 }
             }
         });

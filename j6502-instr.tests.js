@@ -15,10 +15,8 @@ const { Instructions,
 
 let instr_arr = [];
 Object.entries(Instructions).forEach(([name, val]) => {
-    if(val.asm) {
-        let o = {name, ...val};
-        instr_arr.push(o);
-    }
+    let o = {name, ...val};
+    instr_arr.push(o);    
 });
 
 const branchInstr = [
@@ -50,7 +48,10 @@ test('Instructions integrity', t => {
             t.true(last.op < i.op, i.name);
         }
 
-        if(i.match === IMM_MATCH) {
+        if(i.match == null) {
+            t.is(i.size, 1, i.name);
+            t.false(i.name.includes('_'), i.name);
+        } else if(i.match === IMM_MATCH) {
             t.is(i.size, 2);
             t.true(i.name.endsWith('IMM'), i.name);
         } else if(i.match === ZP_MATCH) {

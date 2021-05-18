@@ -1,12 +1,12 @@
 const IMM_MATCH = /^#(\$[0-9a-f]{1,2}|%[0-1]{1,8}|[0-9]{1,3})$/;
-const REL_MATCH = /^(\S+|#$[0-9a-f]{1,2})$/; // e.g. label_name or $F9
+const REL_MATCH = /^([a-z_]+[a-z0-9_]*|\$[0-9a-f]{1,2})$/; // e.g. label_name or $F9
 const ZP_MATCH = /^\$[0-9a-f]{1,2}$/;
 const ZP_X_MATCH = /^\$[0-9a-f]{1,2},x$/;
 const ZP_Y_MATCH = /^\$[0-9a-f]{1,2},y$/;
-const ABS_MATCH = /^\$[0-9a-f]{3,4}$/;
+const ABS_MATCH = /^([a-z_]+[a-z0-9_]*|\$[0-9a-f]{3,4}$)/;
 const ABS_X_MATCH = /^\$[0-9a-f]{3,4},x$/;
 const ABS_Y_MATCH = /^\$[0-9a-f]{3,4},y$/;
-const IND_MATCH = /^\(\$[0-9a-f]{1,2}\)$/;
+const IND_MATCH = /^\(\$[0-9a-f]{1,4}\)$/;
 const IND_X_MATCH = /^\(\$[0-9a-f]{1,2},x\)$/;
 const IND_Y_MATCH = /^\(\$[0-9a-f]{1,2}\),y$/;
 
@@ -41,7 +41,7 @@ const instructions = {
     // Unused: 0x1f
 
     // 2
-    'JSR': 			{ op: 0x20, size: 3, asm: 'jsr', match: null, desc: 'Jump to New Location Saving Return Address' }, 
+    'JSR_ABS': 		{ op: 0x20, size: 3, asm: 'jsr', match: ABS_MATCH, desc: 'Jump to New Location Saving Return Address' }, 
     'AND_IND_X':    { op: 0x21, size: 2, asm: 'and', match: IND_X_MATCH, desc: 'AND Memory with Accumulator (Indirect,X)' },
     // Unused: 0x22 - 0x23
     'BIT_ZP':	    { op: 0x24, size: 2, asm: 'bit', match: ZP_MATCH, desc: 'Test Bits in Memory with Accumulator (ZP)' },

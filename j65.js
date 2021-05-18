@@ -7,6 +7,7 @@
 const fs = require('fs');
 const StreamBuffer = require('streambuf');
 const { C6502_Emulator } = require('./jm65');
+const C6502_Program = require('./j6502');
 
 // Program entry
 main(process.argv);
@@ -17,6 +18,9 @@ function main(args) {
 	switch(mode) {
 		case 'jm':
 			testJm(args);
+			break;
+		case 'dis':
+			disassemble(args);
 			break;
 	}
 }
@@ -31,4 +35,15 @@ function testJm(args) {
     emu.load(fileBuffer);
 
     emu.run();
+}
+
+function disassemble(args) {
+	let fileName = args[3];
+	let offset = Number(args[4] || 0);
+
+	let fileBuffer = fs.readFileSync(fileName);
+    
+    let prg = C6502_Program.disassemble(fileBuffer, offset);
+    
+    console.log(prg);
 }

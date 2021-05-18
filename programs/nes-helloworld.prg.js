@@ -10,7 +10,7 @@ function main(args) {
     let prg = new C6502_Program(0x8000);
     let meta = new C6502_Meta(prg);
     let nes = new C6502_NES(prg);
-    prg.setOrigin(0x8000);
+    prg.setLabelOrigin(0x8000);
 
     const BUTTONS_1		= 0xfe;
     const BUTTONS_2		= 0xff;

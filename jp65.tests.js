@@ -25,6 +25,10 @@ test('Syntax - all syntax flavors', t => {
         'lda $6,x', 
         'lda $10 , x', 
 
+        'ldx $6,y ; comment',     // LDX ZP_Y (no ZP_X exists for LDA)
+        'ldx $6,y', 
+        'ldx $10 , y',
+
         'lda $AA0 ; comment',     // LDA ABS
         'lda $AA0',  
         'lda $aa0',  
@@ -44,7 +48,14 @@ test('Syntax - all syntax flavors', t => {
 
         'lda ($05),y ; comment',  // LDA IND_Y
         'lda ($05),y',  
-        'lda ( $05 ) , y ',  
+        'lda ( $05 ) , y ',
+
+        'Test_BNE:',
+        'bne Test_BNE',
+        'bne $fe',
+        'jmp Test_BNE',
+        'jmp $00fc',
+        'jmp ($aa01)',
         'brk'           // BRK
     ].join('\n'))
 
@@ -65,6 +76,10 @@ test('Syntax - all syntax flavors', t => {
         ['LDA_ZP_X',    6],
         ['LDA_ZP_X',    6],
         ['LDA_ZP_X',    16],
+
+        ['LDX_ZP_Y',    6],
+        ['LDX_ZP_Y',    6],
+        ['LDX_ZP_Y',    16],
 
         ['LDA_ABS',     0xaa0],
         ['LDA_ABS',     0xaa0],
@@ -87,6 +102,12 @@ test('Syntax - all syntax flavors', t => {
         ['LDA_IND_Y',   5],
         ['LDA_IND_Y',   5],
 
+        ['BNE',         {name: 'Test_BNE'}],
+        ['BNE',         0xfe],
+        ['JMP_ABS',     {name: 'Test_BNE'}],
+        ['JMP_ABS',     0xfc],
+        ['JMP_IND',     0xaa01],
+
         ['BRK',         undefined],
     ];
 
@@ -96,8 +117,8 @@ test('Syntax - all syntax flavors', t => {
 
     const assert_a = (i, name, data) => {
         //console.log(i)
-        t.is(a[i].name, name);
-        t.is(a[i].data, data);
+        t.is(a[i].name, name, i);
+        t.deepEqual(a[i].data, data, i);
     };   
 
     t.is(a.length, expected.length);
@@ -141,6 +162,7 @@ test('Syntax - labels', t => {
         'lda #$02',
         'bne test_label',
         'bne $fb',
+        'jmp test_label',
         'brk'
     ].join('\n'))
 
@@ -153,11 +175,81 @@ test('Syntax - labels', t => {
     t.is(bne.data.name, 'test_label');
 
     let expectedProgram = [
-        0xa9, 0x01, // lda #$01
-        0xa9, 0x02, // lda #$02
+        0xa9, 0x01, // lda_imm #$01
+        0xa9, 0x02, // lda_imm #$02
         0xd0, 0xfc,  // bne -3
         0xd0, 0xfb,  // bne -4
+        0x4c, 0x02, 0x00, // jmp
         0x00
     ];
     t.deepEqual(b, Buffer.from(expectedProgram));
+})
+
+test('Syntax - origin', t => {
+    // Parse
+    let p = new JP();
+    let prg = p.parse([
+        '.org $0001',
+        'lda #$01',
+        'test_label:',
+        'lda #$02',
+        'bne test_label',
+        'bne $fb',
+        'jmp test_label',
+        'brk'
+    ].join('\n'))
+
+    // Assert
+    let a = prg.getAssembly();
+    let b = prg.build(true);
+
+    let bne = a[2];
+    t.is(bne.name, 'BNE');
+    t.is(bne.data.name, 'test_label');
+
+    let expectedProgram = [
+        0xa9, 0x01, // lda_imm #$01
+        0xa9, 0x02, // lda_imm #$02
+        0xd0, 0xfc,  // bne -3
+        0xd0, 0xfb,  // bne -4
+        0x4c, 0x03, 0x00, // jmp
+        0x00
+    ];
+    t.deepEqual(b, Buffer.from(expectedProgram));
+})
+
+test('Syntax - origin 2', t => {
+    // Parse
+    let p = new JP();
+    let prg = p.parse([
+        '.org $0001',
+        'lda #$01',
+        'test_label:',
+        '.org $0000',
+        'lda #$02',
+        'bne test_label',
+        'bne $fb',
+        'jmp test_label',
+        'brk'
+    ].join('\n'))
+
+    // Assert
+    let a = prg.getAssembly();
+    let b = prg.build(true);
+
+    let bne = a[2];
+    t.is(bne.name, 'BNE');
+    t.is(bne.data.name, 'test_label');
+
+    let expectedProgram = [
+        0xa9, 0x01, // lda_imm #$01
+        0xa9, 0x02, // lda_imm #$02
+        0xd0, 0xfc,  // bne -3
+        0xd0, 0xfb,  // bne -4
+        0x4c, 0x03, 0x00, // jmp
+        0x00
+    ];
+
+    // TODO: what should be the result?
+    //t.deepEqual(b, Buffer.from(expectedProgram));
 })
