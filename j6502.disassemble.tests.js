@@ -26,10 +26,7 @@ test('Basic disassembly', t => {
 
     t.deepEqual(rom, Buffer.from(expectedRom));
 
-    
-    let jm = new JM();
-    jm.load(rom);
-    let disassembly = jm.disassemble();
+    let disassembly = JM.disassemble(rom);
     t.deepEqual(disassembly, assembly);
     
 })

@@ -7,6 +7,7 @@
 const fs = require('fs');
 const StreamBuffer = require('streambuf');
 const { J6502_Emulator } = require('./jm65');
+const { J6502_NES_Emulator } = require('./jm65-nes');
 const J6502_Program = require('./j6502');
 
 // Program entry
@@ -18,6 +19,9 @@ function main(args) {
 	switch(mode) {
 		case 'jm':
 			testJm(args);
+			break;
+		case 'nes':
+			testJmNes(args);
 			break;
 		case 'dis':
 			disassemble(args);
@@ -34,6 +38,14 @@ function testJm(args) {
     
     emu.load(fileBuffer);
 
+    emu.run();
+}
+
+function testJmNes(args) {
+	let fileName = args[3];    
+    let emu = new J6502_NES_Emulator();
+    
+    emu.loadFile(fileName);
     emu.run();
 }
 

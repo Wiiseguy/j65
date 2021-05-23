@@ -86,7 +86,7 @@ test('Simple write to custom memory', t => {
         }
     }
     let mb = sut.getMemoryBus();
-    mb.connect(ram, 0, 0x8000)
+    mb.connect(ram, 0x4000, 0x8000)
     sut.load(rom);
     sut.run();
 
@@ -101,13 +101,13 @@ test('Simple write to GenericStorage', t => {
     // Create rom
     let prg = new J6502_Program(0x10);
     let meta = new J6502_Meta(prg);
-    meta.setImm(0x0001, 0x10);
+    meta.setImm(0x1001, 0x10);
     let rom = prg.build();
 
     // Create emulator and run
     let sut = new JM();
-    let gs = new JM65.J6502_GenericStorage();
-    gs.connect(sut.getMemoryBus());
+    let gs = new JM65.J6502_GenericStorage(2); // 2 byte storage
+    gs.connect(sut.getMemoryBus(), 0x1000);
     sut.load(rom);
     sut.run();
 
@@ -122,18 +122,18 @@ test('Simple write to two GenericStorages', t => {
     // Create rom
     let prg = new J6502_Program(0x20);
     let meta = new J6502_Meta(prg);
-    meta.setImm(0x0, 1);
-    meta.setImm(0x1, 2);
-    meta.setImm(0x2, 3);
-    meta.setImm(0x3, 4);
+    meta.setImm(0x1000, 1);
+    meta.setImm(0x1001, 2);
+    meta.setImm(0x2000, 3);
+    meta.setImm(0x2001, 4);
     let rom = prg.build();
 
     // Create emulator and run
     let sut = new JM();
     let gs1 = new JM65.J6502_GenericStorage(2); // 2 byte storage!
     let gs2 = new JM65.J6502_GenericStorage(2);
-    gs1.connect(sut.getMemoryBus());
-    gs2.connect(sut.getMemoryBus(), 2); // map to 2, 3 on mem bus
+    gs1.connect(sut.getMemoryBus(), 0x1000); // map 2 byte storage to 0x1000 and 0x1001
+    gs2.connect(sut.getMemoryBus(), 0x2000); // map 2 byte storage to 0x2000 and 0x2001
     sut.load(rom);
     sut.run();
 
@@ -151,8 +151,8 @@ test('Simple write to two GenericStorages', t => {
 test('Simple load from two GenericStorages', t => {
     // Create rom
     let prg = new J6502_Program(0x10);
-    prg.add('LDA_ABS', 0)
-    prg.add('LDA_ABS', 1);
+    prg.add('LDA_ABS', 0x1000)
+    prg.add('LDA_ABS', 0x1001);
     let rom = prg.build();
 
     // Create emulator and run
@@ -163,8 +163,8 @@ test('Simple load from two GenericStorages', t => {
     let buf2 = gs2.getBuffer();
     buf1.writeUInt8(6, 0) // Preload 6 into storage 1
     buf2.writeUInt8(7, 0) // Preload 7 into storage 2
-    gs1.connect(sut.getMemoryBus());
-    gs2.connect(sut.getMemoryBus(), 1); // map to 1, 2 on mem bus
+    gs1.connect(sut.getMemoryBus(), 0x1000); // map to 0x1000 on mem bus
+    gs2.connect(sut.getMemoryBus(), 0x1001); // map to 0x1001 on mem bus
     sut.load(rom);    
 
     // Assert

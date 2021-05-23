@@ -173,11 +173,11 @@ const instructions = {
     'LDX_ZP': 		{ op: 0xa6, size: 2, asm: 'ldx', match: ZP_MATCH, desc: 'Load Index X with Memory (ZP)' },  
     // Unused: 0xa7
     'TAY': 			{ op: 0xa8, size: 1, asm: 'tay', match: null, desc: 'Transfer Accumulator to Index Y' },
-    'LDA_IMM': 		{ op: 0xa9, size: 2, asm: 'lda', match: IMM_MATCH, desc: 'Load Accumulator with Immediate Value' },
+    'LDA_IMM': 		{ op: 0xa9, size: 2, asm: 'lda', match: IMM_MATCH, micro(m) { m.N = m.Z = m.A = m.fetch(); }, desc: 'Load Accumulator with Immediate Value' },
     'TAX': 			{ op: 0xaa, size: 1, asm: 'tax', match: null, desc: 'Transfer Accumulator to Index X' },
     // Unused: 0xab
     'LDY_ABS': 		{ op: 0xac, size: 3, asm: 'ldy', match: ABS_MATCH, desc: 'Load Index Y with Memory (Absolute)'},
-    'LDA_ABS': 		{ op: 0xad, size: 3, asm: 'lda', match: ABS_MATCH, desc: 'Load Accumulator with Memory (Absolute)' },
+    'LDA_ABS': 		{ op: 0xad, size: 3, asm: 'lda', match: ABS_MATCH, micro(m) { m.N = m.Z = m.A = m.read(m.fetch16()); }, desc: 'Load Accumulator with Memory (Absolute)' },
     'LDX_ABS': 		{ op: 0xae, size: 3, asm: 'ldx', match: ABS_MATCH, desc: 'Load Index X with Memory (Absolute)'},
     // Unused: 0xaf
 
