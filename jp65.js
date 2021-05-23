@@ -5,21 +5,10 @@
     
 */
 
-const fs = require('fs');
-const StreamBuffer = require('streambuf');
-const C6502_Instructions = require('./j6502-instr').Instructions;
-const C6502_Program = require('./j6502');
+const J6502_Instructions = require('./j6502-instr');
+const J6502_Program = require('./j6502');
 
-let instr_lookup = {};
-let instr_arr = [];
-Object.entries(C6502_Instructions).forEach(([name, val]) => {
-    let o = {name, ...val};
-    instr_arr.push(o);
-    //instr_lookup[val.name] = o;
-});
-
-//console.log(instr_lookup);
-//console.log(instr_arr);
+const InstructionsArray = J6502_Instructions.InstructionsArray;
 
 function matchAsm(asm, param) {
     let matched;
@@ -27,9 +16,9 @@ function matchAsm(asm, param) {
 
     if(param) {
         param = param.toLowerCase();
-        matched = instr_arr.find(i => i.asm === asm && param.match(i.match));
+        matched = InstructionsArray.find(i => i.asm === asm && param.match(i.match));
     } else {
-        matched = instr_arr.find(i => i.asm === asm && i.match == null);
+        matched = InstructionsArray.find(i => i.asm === asm && i.match == null);
     }
     return matched;
 }
@@ -60,9 +49,9 @@ function unpackNumber(str, size) {
     return num;
 }
 
-function C6502_Parser() {
+function J6502_Parser() {
     this.parse = function(lines) {
-        const prg = new C6502_Program(); // TODO: determine size?
+        const prg = new J6502_Program(); // TODO: determine size?
 
         const handleDirective = tokens => {
             let directive = tokens[0].slice(1);
@@ -130,5 +119,5 @@ function C6502_Parser() {
 }
 
 module.exports = {
-    C6502_Parser
+    J6502_Parser
 }

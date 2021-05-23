@@ -8,13 +8,7 @@ const StreamBuffer = require('streambuf');
 
 const Instructions = require('./j6502-instr').Instructions;
 
-let InstructionsByOp = {};
-Object.entries(Instructions).forEach(([name, val]) => {
-	let o = {name, ...val};
-	InstructionsByOp[val.op] = o;    
-});
-
-function C6502_Program(size) {
+function J6502_Program(size) {
 	if(!size) size = 0x4000; // 16K default
 
 	let instructions = Instructions;
@@ -205,28 +199,8 @@ function C6502_Program(size) {
 	};
 }
 
-C6502_Program.disassemble = function(buf, start=0) {
-	const prg = new C6502_Program();
-	const sb = new StreamBuffer(buf);
-	sb.seek(start);
-	while(!sb.isEOF()) {
-		let op = sb.readByte();
-		let instr = InstructionsByOp[op];
-		let data = null;
-		if(instr) {
-			if(instr.size === 2) {
-				data = sb.readByte();
-			} else if(instr.size === 3) {
-				data = sb.readUInt16LE();
-			}
-			prg.add(instr.name, data);
-		}
-	}
-	return prg.getAssembly();
-};
-
 function uintLeArrToString(uarr) {
 	return [...uarr].reverse().map(a => a.toString(16).padStart(2, '0')).join('');
 }
 
-module.exports = C6502_Program;
+module.exports = J6502_Program;

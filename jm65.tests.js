@@ -1,15 +1,15 @@
 const test = require('aqa')
 
-const C6502_Program = require('./j6502');
-const C6502_Meta = require('./j6502-meta');
+const J6502_Program = require('./j6502');
+const J6502_Meta = require('./j6502-meta');
 const JM65 = require('./jm65');
 
-const JM = JM65.C6502_Emulator;
+const JM = JM65.J6502_Emulator;
 
 test('LDA flags', t => {
     // Create rom
-    let prg = new C6502_Program(0x10);
-    //let meta = new C6502_Meta(prg);
+    let prg = new J6502_Program(0x10);
+    //let meta = new J6502_Meta(prg);
     prg.add('LDA_IMM', 0x00);
     prg.add('LDA_IMM', 0x79);
     prg.add('LDA_IMM', 0x80);
@@ -47,10 +47,32 @@ test('LDA flags', t => {
     t.is(s.S.Z, 0x00);
 })
 
+test('Reset vector', t => {
+    // Create rom
+    let prg = new J6502_Program(0x10);
+    prg.add('LDA_IMM', 0x80);
+    prg.add('LDA_IMM', 0x90);
+    prg.add('LDA_IMM', 0xA0);
+    let rom = prg.build();
+
+    // Create emulator and run
+    let sut = new JM();
+    let gs = new JM65.J6502_GenericStorage(2); // Only needs 2 bytes to hold the reset vector
+    gs.write(0, 4); // Write 4 to address 0, which will be mapped to fffc later
+    gs.write(1, 0); // Write 0 to address 1, which will be mapped to fffd later, making the contents 0x04 0x00, which will be read as 0x0004 (the LDA_IM 0xA0 instruction)
+    gs.connect(sut.getMemoryBus(), 0xfffc); // Connect the 2 byte memory to where the CPU will look for the reset vector (FFFC, FFFD)
+    sut.load(rom);
+    sut.step();
+
+    // Assert
+    let s = sut.getStatus();
+    t.is(s.A, 0xA0);
+})
+
 test('Simple write to custom memory', t => {
     // Create rom
-    let prg = new C6502_Program(0x10);
-    let meta = new C6502_Meta(prg);
+    let prg = new J6502_Program(0x10);
+    let meta = new J6502_Meta(prg);
     meta.setImm(0x4000, 0x99);
     let rom = prg.build();
 
@@ -77,14 +99,14 @@ test('Simple write to custom memory', t => {
 
 test('Simple write to GenericStorage', t => {
     // Create rom
-    let prg = new C6502_Program(0x10);
-    let meta = new C6502_Meta(prg);
+    let prg = new J6502_Program(0x10);
+    let meta = new J6502_Meta(prg);
     meta.setImm(0x0001, 0x10);
     let rom = prg.build();
 
     // Create emulator and run
     let sut = new JM();
-    let gs = new JM65.C6502_GenericStorage();
+    let gs = new JM65.J6502_GenericStorage();
     gs.connect(sut.getMemoryBus());
     sut.load(rom);
     sut.run();
@@ -98,8 +120,8 @@ test('Simple write to GenericStorage', t => {
 
 test('Simple write to two GenericStorages', t => {
     // Create rom
-    let prg = new C6502_Program(0x20);
-    let meta = new C6502_Meta(prg);
+    let prg = new J6502_Program(0x20);
+    let meta = new J6502_Meta(prg);
     meta.setImm(0x0, 1);
     meta.setImm(0x1, 2);
     meta.setImm(0x2, 3);
@@ -108,8 +130,8 @@ test('Simple write to two GenericStorages', t => {
 
     // Create emulator and run
     let sut = new JM();
-    let gs1 = new JM65.C6502_GenericStorage(2); // 2 byte storage!
-    let gs2 = new JM65.C6502_GenericStorage(2);
+    let gs1 = new JM65.J6502_GenericStorage(2); // 2 byte storage!
+    let gs2 = new JM65.J6502_GenericStorage(2);
     gs1.connect(sut.getMemoryBus());
     gs2.connect(sut.getMemoryBus(), 2); // map to 2, 3 on mem bus
     sut.load(rom);
@@ -128,15 +150,15 @@ test('Simple write to two GenericStorages', t => {
 
 test('Simple load from two GenericStorages', t => {
     // Create rom
-    let prg = new C6502_Program(0x10);
+    let prg = new J6502_Program(0x10);
     prg.add('LDA_ABS', 0)
     prg.add('LDA_ABS', 1);
     let rom = prg.build();
 
     // Create emulator and run
     let sut = new JM();
-    let gs1 = new JM65.C6502_GenericStorage(1); // 1 byte storage!
-    let gs2 = new JM65.C6502_GenericStorage(1);
+    let gs1 = new JM65.J6502_GenericStorage(1); // 1 byte storage!
+    let gs2 = new JM65.J6502_GenericStorage(1);
     let buf1 = gs1.getBuffer();
     let buf2 = gs2.getBuffer();
     buf1.writeUInt8(6, 0) // Preload 6 into storage 1

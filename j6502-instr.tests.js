@@ -1,6 +1,8 @@
 const test = require('aqa')
 
 const { Instructions,
+    InstructionsByOp,
+    InstructionsArray,
     IMM_MATCH,
     REL_MATCH,
     ZP_MATCH,
@@ -12,12 +14,6 @@ const { Instructions,
     IND_MATCH,
     IND_X_MATCH,
     IND_Y_MATCH } = require('./j6502-instr');
-
-let instr_arr = [];
-Object.entries(Instructions).forEach(([name, val]) => {
-    let o = {name, ...val};
-    instr_arr.push(o);    
-});
 
 const branchInstr = [
     'BPL',
@@ -32,14 +28,17 @@ const branchInstr = [
 
 test('Instructions integrity', t => {
     // Of the 256 possible opcodes available using an 8-bit pattern, the original 6502 uses 151 of them, https://en.wikipedia.org/wiki/MOS_Technology_6502#Instructions_and_opcodes
-    t.is(instr_arr.length, 151);
-    let opSet = new Set(instr_arr.map(i => i.op));
-    t.is(opSet.size, 151)
+    t.is(Object.keys(Instructions).length, 151);
+    t.is(Object.keys(InstructionsByOp).length, 151);
+    t.is(InstructionsArray.length, 151);
+    
+    let opSet = new Set(InstructionsArray.map(i => i.op));
+    t.is(opSet.size, 151, 'not all opcodes are unique')
 
     t.is(branchInstr.length, 8);    
 
     let last = null;
-    instr_arr.forEach(i => {
+    InstructionsArray.forEach(i => {
         // Check if e.g. LDA_ABS starts with lda
         t.true(i.name.startsWith(i.asm.toUpperCase()), i.name);
 

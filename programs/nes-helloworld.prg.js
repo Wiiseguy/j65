@@ -1,15 +1,15 @@
-const C6502_Program = require('../j6502');
-const C6502_Meta = require('../j6502-meta');
-const C6502_NES = require('../j6502-nes');
+const J6502_Program = require('../j6502');
+const J6502_Meta = require('../j6502-meta');
+const J6502_NES = require('../j6502-nes');
 
 // Program entry
 main(process.argv);
 
 function main(args) {
     // Create PRG ROM and write some program!
-    let prg = new C6502_Program(0x8000);
-    let meta = new C6502_Meta(prg);
-    let nes = new C6502_NES(prg);
+    let prg = new J6502_Program(0x8000);
+    let meta = new J6502_Meta(prg);
+    let nes = new J6502_NES(prg);
     prg.setLabelOrigin(0x8000);
 
     const BUTTONS_1		= 0xfe;
@@ -125,7 +125,7 @@ function main(args) {
     nes.uploadPPU(prg.getLabel('PaletteData'), palette.length);
 
     // Load sprites to RAM
-    meta.copy(C6502_NES.SPR_START, prg.getLabel('SpriteData'), sprites.length);
+    meta.copy(J6502_NES.SPR_START, prg.getLabel('SpriteData'), sprites.length);
 
     // Cleanup
     meta.jsr('ResetAndCleanupPPU');

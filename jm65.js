@@ -10,17 +10,11 @@
     $FFFE-FFFF - IRQ/BRK vector
 */
 
-const fs = require('fs');
 const StreamBuffer = require('streambuf');
-const C6502_Instructions = require('./j6502-instr').Instructions;
+const J6502_Program = require('./j6502');
+const J6502_Instructions = require('./j6502-instr');
 
-let instr_lookup = {};
-Object.entries(C6502_Instructions).forEach(([name, val]) => {
-    instr_lookup[val.op] = {...val, name};
-});
-
-
-function C6502_Emulator() {
+function J6502_Emulator() {
     let prg = null;
 
     // Pins
@@ -52,7 +46,7 @@ function C6502_Emulator() {
     };
 
     // Memory bus
-    const memBus = new C6502_MemoryBus();
+    const memBus = new J6502_MemoryBus();
 
     this.reset = function() {
         A = X = Y = SP = PC = 0;
@@ -63,10 +57,11 @@ function C6502_Emulator() {
         return { A, X, Y, SP, PC, S: {...S} };
     };
 
-    // TODO: replace with memory map ($FFFC/FFFD reset vector)
     this.load = function(buf) {
         prg = buf;
-        //console.log("Loaded:", prg.length);
+
+        // Read reset vector ($FFFC/FFFD)
+        PC = (memBus.read(0xfffd) << 8) + memBus.read(0xfffc);
     };
 
     this.run = function() {
@@ -94,6 +89,25 @@ function C6502_Emulator() {
         return memBus;
     };
 
+    this.disassemble = function(start=0) {
+        const program = new J6502_Program();
+        const sb = new StreamBuffer(prg);
+        sb.seek(start);
+        while(!sb.isEOF()) {
+            let op = sb.readByte();
+            let instr = J6502_Instructions.InstructionsByOp[op];
+            let data = null;
+            if(instr) {
+                if(instr.size === 2) {
+                    data = sb.readByte();
+                } else if(instr.size === 3) {
+                    data = sb.readUInt16LE();
+                }
+                program.add(instr.name, data);
+            }
+        }
+        return program.getAssembly();
+    };
 
 
     function handleInstr(instr) {
@@ -102,14 +116,12 @@ function C6502_Emulator() {
         switch(n) {
             case 'BRK':
                 halted = true;
-                PC = PC + 1;
                 break;
             case 'LDA_IMM':
-                L = A = getNextByte();
-                
+                L = A = getNextByte();                
                 break;
             case 'LDA_ABS':
-                A = memBus.read(getNextAddress());
+                L = A = memBus.read(getNextAddress());
                 break;
             case 'STA_ABS':
                 memBus.write(getNextAddress(), A);
@@ -138,10 +150,10 @@ function C6502_Emulator() {
             return null;
         }
 
-        let instr = instr_lookup[c];
+        let instr = J6502_Instructions.InstructionsByOp[c];
 
         if(!instr)
-            throw new Error(`Unknown op code: ${c.toString(16)}`);
+            throw new Error(`Unknown op code: ${c} (0x${c.toString(16)})`);
 
         //console.log("Instr:", instr);
 
@@ -167,7 +179,7 @@ function C6502_Emulator() {
     }
 }
 
-function C6502_MemoryBus() {
+function J6502_MemoryBus() {
     const handlers = [];
 
     this.connect = function(handler, start, end, offset=0) {
@@ -191,10 +203,11 @@ function C6502_MemoryBus() {
                 return handler.read(addr - offset)
             }
         }
+        return 0;
     };
 }
 
-function C6502_GenericStorage(size = 0x2000) { // default is 0x2000 = 8192 (8K)
+function J6502_GenericStorage(size = 0x2000) { // default is 0x2000 = 8192 (8K)
     const ram = Buffer.alloc(size);
     
     this.connect = function(memBus, start=0) {
@@ -215,7 +228,7 @@ function C6502_GenericStorage(size = 0x2000) { // default is 0x2000 = 8192 (8K)
 }
 
 module.exports = {
-    C6502_Emulator,
-    C6502_MemoryBus,
-    C6502_GenericStorage
+    J6502_Emulator,
+    J6502_MemoryBus,
+    J6502_GenericStorage
 }

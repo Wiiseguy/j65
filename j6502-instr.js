@@ -1,3 +1,4 @@
+// Addressing mode matches
 const IMM_MATCH = /^#(\$[0-9a-f]{1,2}|%[0-1]{1,8}|[0-9]{1,3})$/;
 const REL_MATCH = /^([a-z_]+[a-z0-9_]*|\$[0-9a-f]{1,2})$/; // e.g. label_name or $F9
 const ZP_MATCH = /^\$[0-9a-f]{1,2}$/;
@@ -261,8 +262,18 @@ const instructions = {
 
 Object.freeze(instructions);
 
+let InstructionsByOp = {};
+let InstructionsArray = [];
+Object.entries(instructions).forEach(([name, val]) => {
+    let o = { name, ...val };
+	InstructionsByOp[val.op] = o;    
+    InstructionsArray.push(o);
+});
+
 module.exports = {
     Instructions: instructions,
+    InstructionsByOp,
+    InstructionsArray,
     IMM_MATCH,
     REL_MATCH,
     ZP_MATCH,

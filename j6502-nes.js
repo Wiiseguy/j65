@@ -1,7 +1,7 @@
 const fs = require('fs');
 const StreamBuffer = require('streambuf');
-const C6502_Program = require('./j6502');
-const C6502_Meta = require('./j6502-meta');
+const J6502_Program = require('./j6502');
+const J6502_Meta = require('./j6502-meta');
 
 // NES constants
 const SPR_START		= 0x0200;
@@ -33,11 +33,11 @@ const BTN_UPRIGHT 	= 0b00001001;
 const BTN_DOWNLEFT	= 0b00000110;
 const BTN_DOWNRIGHT	= 0b00000101;
 
-function C6502_NES(prg) {
-	if(!(prg instanceof C6502_Program))
-		throw new Error(`'prg' should be an instance of C6502_Program`);
+function J6502_NES(prg) {
+	if(!(prg instanceof J6502_Program))
+		throw new Error(`'prg' should be an instance of J6502_Program`);
 
-	let meta = new C6502_Meta(prg);
+	let meta = new J6502_Meta(prg);
 
 	// Helper
 	this.utils = {
@@ -176,33 +176,33 @@ function C6502_NES(prg) {
 
 }
 
-C6502_NES.prototype.SPR_START 		= SPR_START;
-C6502_NES.prototype.PPU_CTRL		= PPU_CTRL;
-C6502_NES.prototype.PPU_MASK		= PPU_MASK;
-C6502_NES.prototype.PPU_STATUS		= PPU_STATUS;
-C6502_NES.prototype.SPR_ADDR		= SPR_ADDR;
-C6502_NES.prototype.SPR_DATA		= SPR_DATA;
-C6502_NES.prototype.PPU_SCROLL		= PPU_SCROLL;
-C6502_NES.prototype.PPU_ADDR		= PPU_ADDR;
-C6502_NES.prototype.PPU_DATA		= PPU_DATA;
+J6502_NES.prototype.SPR_START 		= SPR_START;
+J6502_NES.prototype.PPU_CTRL		= PPU_CTRL;
+J6502_NES.prototype.PPU_MASK		= PPU_MASK;
+J6502_NES.prototype.PPU_STATUS		= PPU_STATUS;
+J6502_NES.prototype.SPR_ADDR		= SPR_ADDR;
+J6502_NES.prototype.SPR_DATA		= SPR_DATA;
+J6502_NES.prototype.PPU_SCROLL		= PPU_SCROLL;
+J6502_NES.prototype.PPU_ADDR		= PPU_ADDR;
+J6502_NES.prototype.PPU_DATA		= PPU_DATA;
 
-C6502_NES.prototype.SPR_DMA			= SPR_DMA;
-C6502_NES.prototype.JOYPAD			= JOYPAD;
-C6502_NES.prototype.JOYPAD_1		= JOYPAD_1;
-C6502_NES.prototype.JOYPAD_2		= JOYPAD_2;
+J6502_NES.prototype.SPR_DMA			= SPR_DMA;
+J6502_NES.prototype.JOYPAD			= JOYPAD;
+J6502_NES.prototype.JOYPAD_1		= JOYPAD_1;
+J6502_NES.prototype.JOYPAD_2		= JOYPAD_2;
 
-C6502_NES.prototype.BTN_A			= BTN_A;
-C6502_NES.prototype.BTN_B			= BTN_B;
-C6502_NES.prototype.BTN_SELECT  	= BTN_SELECT;
-C6502_NES.prototype.BTN_START		= BTN_START;
-C6502_NES.prototype.BTN_UP			= BTN_UP;
-C6502_NES.prototype.BTN_DOWN		= BTN_DOWN;
-C6502_NES.prototype.BTN_LEFT		= BTN_LEFT;
-C6502_NES.prototype.BTN_RIGHT   	= BTN_RIGHT;
-C6502_NES.prototype.BTN_AB			= BTN_AB;
-C6502_NES.prototype.BTN_UPLEFT  	= BTN_UPLEFT;
-C6502_NES.prototype.BTN_UPRIGHT 	= BTN_UPRIGHT;
-C6502_NES.prototype.BTN_DOWNLEFT	= BTN_DOWNLEFT;
-C6502_NES.prototype.BTN_DOWNRIGHT	= BTN_DOWNRIGHT;
+J6502_NES.prototype.BTN_A			= BTN_A;
+J6502_NES.prototype.BTN_B			= BTN_B;
+J6502_NES.prototype.BTN_SELECT  	= BTN_SELECT;
+J6502_NES.prototype.BTN_START		= BTN_START;
+J6502_NES.prototype.BTN_UP			= BTN_UP;
+J6502_NES.prototype.BTN_DOWN		= BTN_DOWN;
+J6502_NES.prototype.BTN_LEFT		= BTN_LEFT;
+J6502_NES.prototype.BTN_RIGHT   	= BTN_RIGHT;
+J6502_NES.prototype.BTN_AB			= BTN_AB;
+J6502_NES.prototype.BTN_UPLEFT  	= BTN_UPLEFT;
+J6502_NES.prototype.BTN_UPRIGHT 	= BTN_UPRIGHT;
+J6502_NES.prototype.BTN_DOWNLEFT	= BTN_DOWNLEFT;
+J6502_NES.prototype.BTN_DOWNRIGHT	= BTN_DOWNRIGHT;
 
-module.exports = C6502_NES;
+module.exports = J6502_NES;

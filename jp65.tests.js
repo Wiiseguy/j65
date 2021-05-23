@@ -2,7 +2,7 @@ const test = require('aqa')
 
 const JP65 = require('./jp65');
 
-const JP = JP65.C6502_Parser;
+const JP = JP65.J6502_Parser;
 
 test('Syntax - all syntax flavors', t => {
     // Parse
@@ -196,6 +196,7 @@ test('Syntax - origin', t => {
         'bne test_label',
         'bne $fb',
         'jmp test_label',
+        'jmp $aa01',
         'brk'
     ].join('\n'))
 
@@ -212,7 +213,8 @@ test('Syntax - origin', t => {
         0xa9, 0x02, // lda_imm #$02
         0xd0, 0xfc,  // bne -3
         0xd0, 0xfb,  // bne -4
-        0x4c, 0x03, 0x00, // jmp
+        0x4c, 0x03, 0x00, // jmp test_label
+        0x4c, 0x01, 0xaa, // jmp $aa01
         0x00
     ];
     t.deepEqual(b, Buffer.from(expectedProgram));

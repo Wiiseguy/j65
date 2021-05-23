@@ -1,8 +1,8 @@
-const C6502_Program = require('./j6502');
+const J6502_Program = require('./j6502');
 
-function C6502_Meta(prg) {
-	if(!(prg instanceof C6502_Program))
-		throw new Error(`'prg' should be an instance of C6502_Program`);
+function J6502_Meta(prg) {
+	if(!(prg instanceof J6502_Program))
+		throw new Error(`'prg' should be an instance of J6502_Program`);
 
 	// Helper
 	this.utils = {
@@ -84,4 +84,4 @@ function C6502_Meta(prg) {
 
 }
 
-module.exports = C6502_Meta;
+module.exports = J6502_Meta;
