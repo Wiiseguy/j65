@@ -28,7 +28,7 @@ const instructions = {
     // Unused: 0x0f
 
     // 1
-    'BPL': 			{ op: 0x10, size: 2, asm: 'bpl', match: REL_MATCH, desc: 'Branch on Result Plus (N == 0)' },
+    'BPL': 			{ op: 0x10, size: 2, asm: 'bpl', match: REL_MATCH, micro(m) { m.SIR = m.fetch(); m.PC += m.N === 0 ? m.SIR : 0; }, desc: 'Branch on Result Plus (N == 0)' },
     'ORA_IND_Y': 	{ op: 0x11, size: 2, asm: 'ora', match: IND_Y_MATCH, desc: 'OR Memory with Accumulator (Indirect,Y)' },
     // Unused: 0x12 - 0x14
     'ORA_ZP_X': 	{ op: 0x15, size: 2, asm: 'ora', match: ZP_X_MATCH, desc: 'OR Memory with Accumulator (ZP,X)' },
@@ -42,7 +42,7 @@ const instructions = {
     // Unused: 0x1f
 
     // 2
-    'JSR_ABS': 		{ op: 0x20, size: 3, asm: 'jsr', match: ABS_MATCH, desc: 'Jump to New Location Saving Return Address' }, 
+    'JSR_ABS': 		{ op: 0x20, size: 3, asm: 'jsr', match: ABS_MATCH, micro(m) { m.AD = m.fetch16(); m.PC = m.PC - 1; m.push(m.PCH); m.push(m.PCL); m.PC = m.AD; }, desc: 'Jump to New Location Saving Return Address' }, // The PC - 1 is for accuracy with the actual chip, RTS does a + 1 because of this.
     'AND_IND_X':    { op: 0x21, size: 2, asm: 'and', match: IND_X_MATCH, desc: 'AND Memory with Accumulator (Indirect,X)' },
     // Unused: 0x22 - 0x23
     'BIT_ZP':	    { op: 0x24, size: 2, asm: 'bit', match: ZP_MATCH, desc: 'Test Bits in Memory with Accumulator (ZP)' },
@@ -103,7 +103,7 @@ const instructions = {
     // Unused: 0x5f
 
     // 6
-    'RTS': 			{ op: 0x60, size: 1, asm: 'rts', match: null, desc: 'Return from Subroutine' },
+    'RTS': 			{ op: 0x60, size: 1, asm: 'rts', match: null, micro(m) { m.ADL = m.pull(); m.ADH = m.pull(); m.PC = m.AD + 1; }, desc: 'Return from Subroutine' },
     'ADC_IND_X':    { op: 0x61, size: 2, asm: 'adc', match: IND_X_MATCH, desc: 'Add Memory to Accumulator with Carry (Indirect,X)' },
     // Unused: 0x62 - 0x64
     'ADC_ZP':		{ op: 0x65, size: 2, asm: 'adc', match: ZP_MATCH, desc: 'Add Memory to Accumulator with Carry (ZP)' },
@@ -125,7 +125,7 @@ const instructions = {
     'ADC_ZP_X': 	{ op: 0x75, size: 2, asm: 'adc', match: ZP_X_MATCH, desc: 'Add Memory to Accumulator with Carry (ZP,X)' },
     'ROR_ZP_X': 	{ op: 0x76, size: 2, asm: 'ror', match: ZP_X_MATCH, desc: 'Rotate One Bit Right (ZP,X)' },
     // Unused: 0x77
-    'SEI': 			{ op: 0x78, size: 1, asm: 'sei', match: null, desc: 'Set Interrupt Disable Status' },
+    'SEI': 			{ op: 0x78, size: 1, asm: 'sei', match: null, micro(m) { m.I = 1; }, desc: 'Set Interrupt Disable Status' },
     'ADC_ABS_Y': 	{ op: 0x79, size: 3, asm: 'adc', match: ABS_Y_MATCH, desc: 'Add Memory to Accumulator with Carry (Absolute,Y)' },
     // Unused: 0x7a - 0x7c
     'ADC_ABS_X': 	{ op: 0x7d, size: 3, asm: 'adc', match: ABS_X_MATCH, desc: 'Add Memory to Accumulator with Carry (Absolute,X)' },
@@ -144,9 +144,9 @@ const instructions = {
     // Unused: 0x89
     'TXA': 			{ op: 0x8a, size: 1, asm: 'txa', match: null, desc: 'Transfer Index X to Accumulator' },
     // Unused: 0x8b
-    'STY_ABS': 		{ op: 0x8c, size: 3, asm: 'sty', match: ABS_MATCH, desc: 'Store Index Y in Memory (Absolute)' },
-    'STA_ABS': 		{ op: 0x8d, size: 3, asm: 'sta', match: ABS_MATCH, desc: 'Store Accumulator in Memory (Absolute)' },
-    'STX_ABS':		{ op: 0x8e, size: 3, asm: 'stx', match: ABS_MATCH, desc: 'Store Index X in Memory (Absolute)' },
+    'STY_ABS': 		{ op: 0x8c, size: 3, asm: 'sty', match: ABS_MATCH, micro(m) { m.write(m.fetch16(), m.Y) }, desc: 'Store Index Y in Memory (Absolute)' },
+    'STA_ABS': 		{ op: 0x8d, size: 3, asm: 'sta', match: ABS_MATCH, micro(m) { m.write(m.fetch16(), m.A) }, desc: 'Store Accumulator in Memory (Absolute)' },
+    'STX_ABS':		{ op: 0x8e, size: 3, asm: 'stx', match: ABS_MATCH, micro(m) { m.write(m.fetch16(), m.X) }, desc: 'Store Index X in Memory (Absolute)' },
     // Unused: 0x8f
 
     // 9
@@ -159,26 +159,26 @@ const instructions = {
     // Unused: 0x97
     'TYA': 			{ op: 0x98, size: 1, asm: 'tya', match: null, desc: 'Transfer Index Y to Stack Register (SP = Y)' },
     'STA_ABS_Y':	{ op: 0x99, size: 3, asm: 'sta', match: ABS_Y_MATCH, desc: 'Store Accumulator in Memory (Absolute,Y)' },
-    'TXS': 			{ op: 0x9a, size: 1, asm: 'txs', match: null, desc: 'Transfer Index X to Stack Register (SP = X)' },
+    'TXS': 			{ op: 0x9a, size: 1, asm: 'txs', match: null, micro(m) { m.SP = m.X; }, desc: 'Transfer Index X to Stack Register (SP = X)' },
     // Unused: 0x9b - 0x9c
-    'STA_ABS_X':	{ op: 0x9d, size: 3, asm: 'sta', match: ABS_X_MATCH, desc: 'Store Accumulator in Memory (Absolute,X)' },
+    'STA_ABS_X':	{ op: 0x9d, size: 3, asm: 'sta', match: ABS_X_MATCH, micro(m) { m.write(m.fetch16() + m.X, m.A); }, desc: 'Store Accumulator in Memory (Absolute,X)' },
 
     // A
-    'LDY_IMM': 		{ op: 0xa0, size: 2, asm: 'ldy', match: IMM_MATCH, desc: 'Load Index Y with Memory (Immediate)' },
+    'LDY_IMM': 		{ op: 0xa0, size: 2, asm: 'ldy', match: IMM_MATCH, micro(m) { m.NZ = m.Y = m.fetch() }, desc: 'Load Index Y with Memory (Immediate)' },
     'LDA_IND_X': 	{ op: 0xa1, size: 2, asm: 'lda', match: IND_X_MATCH, desc: 'Load Accumulator with Memory (Indirect,X)' },
-    'LDX_IMM': 		{ op: 0xa2, size: 2, asm: 'ldx', match: IMM_MATCH, desc: 'Load Index X with Memory (Immediate)' },
+    'LDX_IMM': 		{ op: 0xa2, size: 2, asm: 'ldx', match: IMM_MATCH, micro(m) { m.NZ = m.X = m.fetch() }, desc: 'Load Index X with Memory (Immediate)' },
     // Unused: 0xa3
     'LDY_ZP': 		{ op: 0xa4, size: 2, asm: 'ldy', match: ZP_MATCH, desc: 'Load Index Y with Memory (ZP)' }, 
     'LDA_ZP': 		{ op: 0xa5, size: 2, asm: 'lda', match: ZP_MATCH, desc: 'Load Accumulator with Memory (ZP)' },
     'LDX_ZP': 		{ op: 0xa6, size: 2, asm: 'ldx', match: ZP_MATCH, desc: 'Load Index X with Memory (ZP)' },  
     // Unused: 0xa7
     'TAY': 			{ op: 0xa8, size: 1, asm: 'tay', match: null, desc: 'Transfer Accumulator to Index Y' },
-    'LDA_IMM': 		{ op: 0xa9, size: 2, asm: 'lda', match: IMM_MATCH, micro(m) { m.N = m.Z = m.A = m.fetch(); }, desc: 'Load Accumulator with Immediate Value' },
+    'LDA_IMM': 		{ op: 0xa9, size: 2, asm: 'lda', match: IMM_MATCH, micro(m) { m.NZ = m.A = m.fetch() }, desc: 'Load Accumulator with Immediate Value' },
     'TAX': 			{ op: 0xaa, size: 1, asm: 'tax', match: null, desc: 'Transfer Accumulator to Index X' },
     // Unused: 0xab
-    'LDY_ABS': 		{ op: 0xac, size: 3, asm: 'ldy', match: ABS_MATCH, desc: 'Load Index Y with Memory (Absolute)'},
-    'LDA_ABS': 		{ op: 0xad, size: 3, asm: 'lda', match: ABS_MATCH, micro(m) { m.N = m.Z = m.A = m.read(m.fetch16()); }, desc: 'Load Accumulator with Memory (Absolute)' },
-    'LDX_ABS': 		{ op: 0xae, size: 3, asm: 'ldx', match: ABS_MATCH, desc: 'Load Index X with Memory (Absolute)'},
+    'LDY_ABS': 		{ op: 0xac, size: 3, asm: 'ldy', match: ABS_MATCH, micro(m) { m.NZ = m.Y = m.read(m.fetch16()) }, desc: 'Load Index Y with Memory (Absolute)'},
+    'LDA_ABS': 		{ op: 0xad, size: 3, asm: 'lda', match: ABS_MATCH, micro(m) { m.NZ = m.A = m.read(m.fetch16()) }, desc: 'Load Accumulator with Memory (Absolute)' },
+    'LDX_ABS': 		{ op: 0xae, size: 3, asm: 'ldx', match: ABS_MATCH, micro(m) { m.NZ = m.X = m.read(m.fetch16()) }, desc: 'Load Index X with Memory (Absolute)'},
     // Unused: 0xaf
 
     // B
@@ -190,22 +190,22 @@ const instructions = {
     'LDX_ZP_Y': 	{ op: 0xb6, size: 2, asm: 'ldx', match: ZP_Y_MATCH, desc: 'Load Index X with Memory (ZP,Y)' },
     // Unused: 0xb7
     'CLV': 			{ op: 0xb8, size: 1, asm: 'clv', match: null, desc: 'Clear Overflow Flag (V = 0)' },
-    'LDA_ABS_Y': 	{ op: 0xb9, size: 3, asm: 'lda', match: ABS_Y_MATCH, desc: 'Load Accumulator with Memory (Absolute,Y)' },
+    'LDA_ABS_Y': 	{ op: 0xb9, size: 3, asm: 'lda', match: ABS_Y_MATCH, micro(m) { m.NZ = m.A = m.read(m.fetch16() + m.Y); }, desc: 'Load Accumulator with Memory (Absolute,Y)' },
     'TSX': 			{ op: 0xba, size: 1, asm: 'tsx', match: null, desc: 'Transfer Stack Pointer to Index X' },
     // Unused: 0xbb
     'LDY_ABS_X': 	{ op: 0xbc, size: 3, asm: 'ldy', match: ABS_X_MATCH, desc: 'Load Index Y with Memory (Absolute,X)' },
-    'LDA_ABS_X': 	{ op: 0xbd, size: 3, asm: 'lda', match: ABS_X_MATCH, desc: 'Load Accumulator with Memory (Absolute,X)' },
+    'LDA_ABS_X': 	{ op: 0xbd, size: 3, asm: 'lda', match: ABS_X_MATCH, micro(m) { m.NZ = m.A = m.read(m.fetch16() + m.X); }, desc: 'Load Accumulator with Memory (Absolute,X)' },
     'LDX_ABS_Y': 	{ op: 0xbe, size: 3, asm: 'ldx', match: ABS_Y_MATCH, desc: 'Load Index X with Memory (Absolute,Y)' },
 
     // C
-    'CPY_IMM': 		{ op: 0xc0, size: 2, asm: 'cpy', match: IMM_MATCH, desc: 'Compare Memory with Index Y (Immediate)' },
+    'CPY_IMM': 		{ op: 0xc0, size: 2, asm: 'cpy', match: IMM_MATCH, micro(m) { m.SIR = m.Y - m.fetch(); m.C = m.SIR <= 0; m.NZ = m.Y; }, desc: 'Compare Memory with Index Y (Immediate)' },
     'CMP_IND_X':    { op: 0xc1, size: 2, asm: 'cmp', match: IND_X_MATCH, desc: 'Compare Memory with Accumulator (Indirect,X)' },
     // Unused: 0xc2 - 0xc3
     'CPY_ZP': 		{ op: 0xc4, size: 2, asm: 'cpy', match: ZP_MATCH, desc: 'Compare Memory with Index Y (ZP)' }, 
     'CMP_ZP': 		{ op: 0xc5, size: 2, asm: 'cmp', match: ZP_MATCH, desc: 'Compare Memory with Accumulator (ZP)' }, 
     'DEC_ZP': 		{ op: 0xc6, size: 2, asm: 'dec', match: ZP_MATCH, desc: 'Decrement Memory by One (ZP)' },
     // Unused: 0xc7
-    'INY': 			{ op: 0xc8, size: 1, asm: 'iny', match: null, desc: 'Increment Index Y by One' },   
+    'INY': 			{ op: 0xc8, size: 1, asm: 'iny', match: null, micro(m) { m.NZ = m.Y = m.Y + 1; }, desc: 'Increment Index Y by One' },   
     'CMP_IMM':		{ op: 0xc9, size: 2, asm: 'cmp', match: IMM_MATCH, desc: 'Compare Memory with Accumulator (Immediate)' }, 
     'DEX': 			{ op: 0xca, size: 1, asm: 'dex', match: null, desc: 'Decrement Index X by One' },
     // Unused: 0xcb
@@ -215,13 +215,13 @@ const instructions = {
     // Unused: 0xcf
 
     // D
-    'BNE': 			{ op: 0xd0, size: 2, asm: 'bne', match: REL_MATCH, desc: 'Branch on Result not Zero' },
+    'BNE': 			{ op: 0xd0, size: 2, asm: 'bne', match: REL_MATCH, micro(m) { m.SIR = m.fetch(); m.PC += m.Z === 0 ? m.SIR : 0; }, desc: 'Branch on Result not Zero' },
     'CMP_IND_Y': 	{ op: 0xd1, size: 2, asm: 'cmp', match: IND_Y_MATCH, desc: 'Compare Memory with Accumulator (Indirect,Y)' },
     // Unused: 0xd2 - 0xd4
     'CMP_ZP_X': 	{ op: 0xd5, size: 2, asm: 'cmp', match: ZP_X_MATCH, desc: 'Compare Memory with Accumulator (ZP,X)' },
     'DEC_ZP_X': 	{ op: 0xd6, size: 2, asm: 'dec', match: ZP_X_MATCH, desc: 'Decrement Memory by One (ZP,X)' },
     // Unused: 0xd7
-    'CLD': 			{ op: 0xd8, size: 1, asm: 'cld', match: null, desc: 'Clear Decimal Mode (D = 0)' },
+    'CLD': 			{ op: 0xd8, size: 1, asm: 'cld', match: null, micro(m) { m.D = 0; }, desc: 'Clear Decimal Mode (D = 0)' },
     'CMP_ABS_Y': 	{ op: 0xd9, size: 3, asm: 'cmp', match: ABS_Y_MATCH, desc: 'Compare Memory with Accumulator (Absolute,Y)' },
     // Unused: 0xda - 0xdc
     'CMP_ABS_X': 	{ op: 0xdd, size: 3, asm: 'cmp', match: ABS_X_MATCH, desc: 'Compare Memory with Accumulator (Absolute,X)' },
@@ -229,18 +229,18 @@ const instructions = {
     // Unused: 0xdf
 
     // E
-    'CPX_IMM': 		{ op: 0xe0, size: 2, asm: 'cpx', match: IMM_MATCH, desc: 'Compare value and Index X (Immediate)' },
+    'CPX_IMM': 		{ op: 0xe0, size: 2, asm: 'cpx', match: IMM_MATCH, micro(m) { m.SIR = m.X - m.fetch(); m.C = m.SIR <= 0; m.NZ = m.X; }, desc: 'Compare value and Index X (Immediate)' },
     'SBC_IND_X': 	{ op: 0xe1, size: 2, asm: 'sbc', match: IND_X_MATCH, desc: 'Subtract Memory from Accumulator with Borrow (Indirect,X)' },
     // Unused: 0xe2 - 0xe3
     'CPX_ZP': 		{ op: 0xe4, size: 2, asm: 'cpx', match: ZP_MATCH, desc: 'Compare Memory with Index X (ZP)' }, 
     'SBC_ZP': 		{ op: 0xe5, size: 2, asm: 'sbc', match: ZP_MATCH, desc: 'Subtract Memory from Accumulator with Borrow (ZP)' }, 
     'INC_ZP': 		{ op: 0xe6, size: 2, asm: 'inc', match: ZP_MATCH, desc: 'Increment Memory by One (ZP)' },
     // Unused: 0xe7
-    'INX': 			{ op: 0xe8, size: 1, asm: 'inx', match: null, desc: 'Increment Index X by One' },
+    'INX': 			{ op: 0xe8, size: 1, asm: 'inx', match: null, micro(m) { m.NZ = m.X = m.X + 1; }, desc: 'Increment Index X by One' },
     'SBC_IMM':		{ op: 0xe9, size: 2, asm: 'sbc', match: IMM_MATCH, desc: 'Compare Memory with Accumulator (Immediate)' }, 
     'NOP': 			{ op: 0xea, size: 1, asm: 'nop', match: null, desc: 'No Operation' },
     // Unused: 0xeb
-    'CPX_ABS': 		{ op: 0xec, size: 3, asm: 'cpx', match: ABS_MATCH, desc: 'Compare value at address and Index X (Absolute)' },
+    'CPX_ABS': 		{ op: 0xec, size: 3, asm: 'cpx', match: ABS_MATCH, micro(m) { m.SIR = m.X - m.read(m.fetch16()); m.C = m.SIR <= 0; m.NZ = m.X; }, desc: 'Compare value at address and Index X (Absolute)' },
     'SBC_ABS':		{ op: 0xed, size: 3, asm: 'sbc', match: ABS_MATCH, desc: 'Subtract Memory from Accumulator with Borrow (Absolute)' },
     'INC_ABS':		{ op: 0xee, size: 3, asm: 'inc', match: ABS_MATCH, desc: 'Increment Memory by One (Absolute)' },    
     // Unused: 0xef

@@ -68,14 +68,56 @@ function J6502_NES_Emulator() {
         let chr = sb.read(0x2000 * chrSize); // 8192 * x
 
         // 6502 Machine        
-        let jm = new JM({verbose: true});
+        let jm = new JM({verbose: false});
+        let bus = jm.getMemoryBus();
 
-        // Memory mapping
+        // RAM Memory mapping
+        let zeroPage = new JM65.J6502_GenericStorage(0x100);
+        //zeroPage.on('read', addr => console.log("Read from Zero Page!", addr.toString(16)))
+        //zeroPage.on('write', (addr, val) => console.log("Write to Zero Page!", addr.toString(16), val.toString(16)))
+        zeroPage.connect(bus, 0x0000);
+        zeroPage.connect(bus, 0x0800); // Mirroring
+        zeroPage.connect(bus, 0x1000);
+        zeroPage.connect(bus, 0x1800);
+
+        let stack = new JM65.J6502_GenericStorage(0x100);
+        //stack.on('read', addr => console.log("Read from stack!", addr.toString(16)))
+        //stack.on('write', (addr, val) => console.log("Write to stack!", addr.toString(16), val.toString(16)))
+        stack.connect(bus, 0x0100);
+        stack.connect(bus, 0x0100 + 0x0800);
+        stack.connect(bus, 0x0100 + 0x1000);
+        stack.connect(bus, 0x0100 + 0x1800);
+        
+        let ram = new JM65.J6502_GenericStorage(0x600);
+        //ram.on('read', addr => console.log("Read from RAM!", addr.toString(16)))
+        //ram.on('write', (addr, val) => console.log("Write to RAM!", addr.toString(16), val.toString(16)))
+        ram.connect(bus, 0x0200);
+        ram.connect(bus, 0x0200 + 0x0800)
+        ram.connect(bus, 0x0200 + 0x1000)
+        ram.connect(bus, 0x0200 + 0x1800)
+
+        let PPU = new JM65.J6502_GenericStorage(0x8);
+        PPU.connect(bus, 0x2000);
+        //PPU.on('read', addr => console.log(" -PPU read:", addr.toString(16)))
+        //PPU.on('write', (addr, val) => console.log(" -PPU write:", addr.toString(16), val.toString(16)))
+
+        // TODO: Mirror $2008-$3FFF with mirrors of $2000-2007 (repeats every 8 bytes) (1023 times...)
+
+        let APU = new JM65.J6502_GenericStorage(0x18);
+        APU.connect(bus, 0x4000);
+
+        let APU_IO = new JM65.J6502_GenericStorage(0x8);// APU and I/O functionality that is normally disabled
+        APU_IO.connect(bus, 0x4018);
+
+        // ROM Memory mapping
         let prgBank = new JM65.J6502_GenericROM(rom.buffer);
-        prgBank.connect(jm.getMemoryBus(), 0x8000);
+        prgBank.connect(bus, 0x8000);
         if(prgSize === 1) { // Mirror memory
-            prgBank.connect(jm.getMemoryBus(), 0xc000);
+            prgBank.connect(bus, 0xc000);
         }
+
+        // VBlank
+        PPU.write(2, 0x80);
         
         jm.reset();
 
@@ -83,9 +125,10 @@ function J6502_NES_Emulator() {
         jm.printState();
 
         jm.run();
-
-        console.log("Final state:")
+        
         jm.printState();
+        console.log('stack:', stack.getBuffer().slice(250))
+        console.log("Cycles ran:", jm.getCycles());
     };
 
     this.loadFile = function(fileName) {
@@ -101,54 +144,6 @@ function J6502_NES_Emulator() {
 
     };
 
-}
-
-function J6502_MemoryBus() {
-    const handlers = [];
-
-    this.connect = function(handler, start, end, offset=0) {
-        handlers.push([handler, start, end, offset])
-    };
-
-    this.write = function(addr, val) {
-        for(let h of handlers) {
-            const [handler, start, end, offset] = h;
-            if(addr >= start && addr < end) {
-                //console.log("Target", start, end, offset)
-                handler.write(addr - offset, val)
-            }
-        }
-    };
-
-    this.read = function(addr) {
-        for(let h of handlers) {
-            const [handler, start, end, offset] = h;
-            if(addr >= start && addr < end) {
-                return handler.read(addr - offset)
-            }
-        }
-        return 0;
-    };
-}
-
-function J6502_GenericStorage(size = 0x2000) { // default is 0x2000 = 8192 (8K)
-    const ram = Buffer.alloc(size);
-    
-    this.connect = function(memBus, start=0) {
-        memBus.connect(this, start, ram.length + start, start);
-    };
-
-    this.write = function(addr, val) {
-        ram.writeUInt8(val, addr);
-    };
-
-    this.read = function(addr) {
-        return ram.readUInt8(addr);
-    };
-
-    this.getBuffer = function() {
-        return ram;
-    };
 }
 
 module.exports = {
