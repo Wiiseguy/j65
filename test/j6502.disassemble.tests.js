@@ -1,8 +1,8 @@
 const test = require('aqa')
 
-const J6502_Instructions = require('./j6502-instr').Instructions;
-const J6502_Program = require('./j6502');
-const JM65 = require('./jm65');
+const J6502_Instructions = require('../dist/j6502-instr').Instructions;
+const { J6502_Program } = require('../dist/j6502');
+const JM65 = require('../dist/jm65');
 
 const JM = JM65.J6502_Emulator;
 

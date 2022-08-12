@@ -1,6 +1,6 @@
 const test = require('aqa')
 
-const JP65 = require('./jp65');
+const JP65 = require('../dist/jp65');
 
 const JP = JP65.J6502_Parser;
 

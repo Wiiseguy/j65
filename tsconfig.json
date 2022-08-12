@@ -1,0 +1,20 @@
+{
+    "compilerOptions": {
+        "outDir": "./dist",
+        "allowJs": true,
+        "checkJs": true,
+        "target": "ESNext",
+        "allowUnusedLabels": false,
+        "allowUnreachableCode": false,
+        "noUnusedParameters": true,
+        "moduleResolution": "node",
+        "module": "commonjs",
+        "resolveJsonModule": true,
+        "lib": [
+            "ESNext"
+        ]
+    },
+    "include": [
+        "src/**/*"
+    ],
+}
