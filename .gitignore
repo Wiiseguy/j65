@@ -4,8 +4,8 @@ node_modules
 *.bat
 *.bak
 .vscode
-.vs/slnx.sqlite
-.vs/6502/v16/.suo
-.vs/VSWorkspaceState.json
+.vs
 
 *.log
+
+dist

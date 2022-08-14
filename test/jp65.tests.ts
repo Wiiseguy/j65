@@ -1,12 +1,11 @@
-const test = require('aqa')
+import { Instruction, J6502_Program, RelativeLabel } from "../src/j6502";
+import { J6502_Parser } from "../src/jp65";
 
-const JP65 = require('../dist/jp65');
-
-const JP = JP65.J6502_Parser;
+const test = require('aqa');
 
 test('Syntax - all syntax flavors', t => {
     // Parse
-    let p = new JP();
+    let p = new J6502_Parser();
     let prg = p.parse([
         'LDA #1 ; comment',    // LDA IMM
         'lda #1', 
@@ -111,8 +110,8 @@ test('Syntax - all syntax flavors', t => {
         ['BRK',         undefined],
     ];
 
-    // Assert
-    let a = prg.getAssembly();
+    // Assert    
+    let a = prg.getAssembly().filter(s => s instanceof Instruction) as Instruction[];
     //console.log("Assembly:", a);
 
     const assert_a = (i, name, data) => {
@@ -129,7 +128,7 @@ test('Syntax - all syntax flavors', t => {
 
 test('Endianess', t => {
     // Parse
-    let p = new JP();
+    let p = new J6502_Parser();
     let prg = p.parse([
         'lda $4401',
         'brk'
@@ -155,7 +154,7 @@ test('Endianess', t => {
 
 test('Syntax - labels', t => {
     // Parse
-    let p = new JP();
+    let p = new J6502_Parser();
     let prg = p.parse([
         'lda #$01',
         'test_label:',
@@ -170,9 +169,10 @@ test('Syntax - labels', t => {
     let a = prg.getAssembly();
     let b = prg.build(true);
 
-    let bne = a[2];
+    let bne = a[2] as Instruction;
     t.is(bne.name, 'BNE');
-    t.is(bne.data.name, 'test_label');
+    t.true(bne.data instanceof RelativeLabel);
+    t.is((bne.data as RelativeLabel).name, 'test_label');
 
     let expectedProgram = [
         0xa9, 0x01, // lda_imm #$01
@@ -187,7 +187,7 @@ test('Syntax - labels', t => {
 
 test('Syntax - origin', t => {
     // Parse
-    let p = new JP();
+    let p = new J6502_Parser();
     let prg = p.parse([
         '.org $0001',
         'lda #$01',
@@ -204,9 +204,10 @@ test('Syntax - origin', t => {
     let a = prg.getAssembly();
     let b = prg.build(true);
 
-    let bne = a[2];
+    let bne = a[2] as Instruction;
     t.is(bne.name, 'BNE');
-    t.is(bne.data.name, 'test_label');
+    t.true(bne.data instanceof RelativeLabel);
+    t.is((bne.data as RelativeLabel).name, 'test_label');
 
     let expectedProgram = [
         0xa9, 0x01, // lda_imm #$01
@@ -222,7 +223,7 @@ test('Syntax - origin', t => {
 
 test('Syntax - origin 2', t => {
     // Parse
-    let p = new JP();
+    let p = new J6502_Parser();
     let prg = p.parse([
         '.org $0001',
         'lda #$01',
@@ -239,9 +240,10 @@ test('Syntax - origin 2', t => {
     let a = prg.getAssembly();
     let b = prg.build(true);
 
-    let bne = a[2];
+    let bne = a[2] as Instruction;
     t.is(bne.name, 'BNE');
-    t.is(bne.data.name, 'test_label');
+    t.true(bne.data instanceof RelativeLabel);
+    t.is((bne.data as RelativeLabel).name, 'test_label');
 
     let expectedProgram = [
         0xa9, 0x01, // lda_imm #$01

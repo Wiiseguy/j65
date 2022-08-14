@@ -1,6 +1,6 @@
-const test = require('aqa')
+import test = require('aqa')
 
-const { Instructions,
+import { Instructions,
     InstructionsByOp,
     InstructionsArray,
     IMM_MATCH,
@@ -13,7 +13,7 @@ const { Instructions,
     ABS_Y_MATCH,
     IND_MATCH,
     IND_X_MATCH,
-    IND_Y_MATCH } = require('../dist/j6502-instr');
+    IND_Y_MATCH } from '../src/j6502-instr';
 
 const branchInstr = [
     'BPL',

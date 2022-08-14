@@ -9,10 +9,10 @@
     $FFFC-FFFD - RESET vector
     $FFFE-FFFF - IRQ/BRK vector
 */
-import * as StreamBuffer from 'streambuf';
 import { InstructionsByOp } from './j6502-instr'
 import { J6502_Program } from './j6502';
 import { EventEmitter } from 'stream';
+import StreamBuffer = require('streambuf');
 
 // TODO: rewrite to class
 function J6502_Emulator(opts = undefined) {
@@ -293,24 +293,26 @@ function J6502_Emulator(opts = undefined) {
     }
 }
 
-J6502_Emulator.disassemble = function (prg, start = 0) {
-    const program = new J6502_Program();
-    const sb = new StreamBuffer(prg);
-    sb.seek(start);
-    while (!sb.isEOF()) {
-        let op = sb.readByte();
-        let instr = InstructionsByOp[op];
-        let data = null;
-        if (instr) {
-            if (instr.size === 2) {
-                data = sb.readByte();
-            } else if (instr.size === 3) {
-                data = sb.readUInt16LE();
+class J6502_Disassembler {
+    disassemble(prg, start = 0) {
+        const program = new J6502_Program();
+        const sb = new StreamBuffer(prg);
+        sb.seek(start);
+        while (!sb.isEOF()) {
+            let op = sb.readByte();
+            let instr = InstructionsByOp[op];
+            let data = null;
+            if (instr) {
+                if (instr.size === 2) {
+                    data = sb.readByte();
+                } else if (instr.size === 3) {
+                    data = sb.readUInt16LE();
+                }
+                program.add(instr.name, data);
             }
-            program.add(instr.name, data);
         }
+        return program.getAssembly();
     }
-    return program.getAssembly();
 }
 
 interface MemoryBus {
@@ -440,6 +442,7 @@ export {
     MemoryBus,
     
     J6502_Emulator,
+    J6502_Disassembler,
     J6502_MemoryBus,
     J6502_GenericROM,
     J6502_GenericStorage

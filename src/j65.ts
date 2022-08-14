@@ -4,7 +4,7 @@
 	03-05-2020: Started
 */
 import { readFileSync } from 'fs';
-import { J6502_Emulator } from './jm65';
+import { J6502_Disassembler, J6502_Emulator } from './jm65';
 import { J6502_NES_Emulator } from './jm65-nes';
 
 // Program entry and
@@ -52,7 +52,7 @@ function disassemble(args) {
 
 	let fileBuffer = readFileSync(fileName);
 
-	let prg = J6502_Emulator.disassemble(fileBuffer, offset);
+	let prg = new J6502_Disassembler().disassemble(fileBuffer, offset);
 
 	console.log(prg);
 }

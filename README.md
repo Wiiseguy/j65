@@ -1,21 +1,21 @@
 # j65
 > A 6502 Assembler, Parser and Emulator written in JavaScript / TypeScript
 
-## j6502.js
+## j6502.ts
 Assembler. Contains an API for programmatically assembling a 6502 program.
 
-### j6502-instr.js
+### j6502-instr.ts
 Instruction definitions. The heart of all the j65 libraries. Describes all the 6502 opcodes and contains micro-code instructions for them.
 
-### j6502-meta.js
+### j6502-meta.ts
 Assembler utilities. Contains helper functions for programmatic assembling.
 
-### j6502-nes.js
+### j6502-nes.ts
 NES Assembler utilities. Contains helper functions for easier NES assembly.
 
 <br>
 
-## jm65.js
+## jm65.ts
 Simulator. Contains an API for running an assembled 6502 program from byte code.
 
 **Note**: Not fully functional yet, as not all micro-codes for each opcode have been implemented. See `j6502-instr.js`.
@@ -55,12 +55,12 @@ s = emu.getStatus();
 console.log('A register:', s.A); // Will print 'A register: 99'
 ```
 
-### jm65-nes.js
+### jm65-nes.ts
 NES Emulator. Uses jm65.js and emory mapping to emulate the NES.
 
 <br>
 
-## jp65.js
+## jp65.ts
 Parser. Contains an API for parsing and assembling a 6502 program from source code.
 
 

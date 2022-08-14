@@ -10,9 +10,9 @@
     $FFFE-FFFF - IRQ/BRK vector
 */
 import { readFileSync } from 'fs';
-import StreamBuffer from 'streambuf';
 import { inspect } from 'util';
 import { J6502_Emulator, J6502_GenericROM, J6502_GenericStorage } from './jm65';
+import StreamBuffer = require('streambuf');
 
 const JM = J6502_Emulator;
 

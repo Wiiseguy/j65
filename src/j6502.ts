@@ -3,19 +3,15 @@
 
 	03-05-2020: Started
 */
-
+ 
 import { Instructions } from './j6502-instr';
-import * as StreamBuffer from 'streambuf';
 import { readFileSync, writeFileSync } from 'fs'
+import StreamBuffer = require('streambuf');
 
-class BaseAssembly {
-}
-
-class Instruction extends BaseAssembly {
+class Instruction {
 	name: string;
 	data: number | BaseLabel;
 	constructor(name, data) {
-		super();
 		this.name = name;
 		this.data = data;
 	}
@@ -27,6 +23,15 @@ class DataInsertion {
 		this.data = bytes;
 	}
 }
+
+class CursorMover {
+	address: string;
+	constructor(address) {
+		this.address = address;
+	}
+}
+
+type AssemblerInstruction = Instruction | DataInsertion | CursorMover;
 
 class BaseLabel {
 
@@ -48,22 +53,17 @@ class RelativeLabel extends BaseLabel {
 	}
 }
 
-class CursorMover {
-	address: string;
-	constructor(address) {
-		this.address = address;
-	}
-}
+
 
 class J6502_Program {
 	size: number;
-	labels = {};
+	labels: Record<string, number> = {};
 	labelCounter = 0;
-	vars = {};
+	vars: Record<string, number> = {};
 	varsCounter = 0;
 	bufPos = 0;
 	origin = 0;
-	assembly: BaseAssembly[] = [];
+	assembly: AssemblerInstruction[] = [];
 
 	constructor(size = 0x4000) {
 		this.size = size;
@@ -222,5 +222,14 @@ class J6502_Program {
 }
 
 export {
+	Instruction,
+	DataInsertion,
+	CursorMover,
+	AssemblerInstruction,
+
+	BaseLabel,
+	Label,
+	RelativeLabel,
+
 	J6502_Program
 }

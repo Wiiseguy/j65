@@ -1,15 +1,13 @@
-const test = require('aqa')
+import test = require('aqa')
+import { J6502_Program } from '../src/j6502';
+import { J6502_Meta } from '../src/j6502-meta';
+import { J6502_Emulator, J6502_GenericStorage } from '../src/jm65';
 
-const { J6502_Program } = require('../dist/j6502');
-const { J6502_Meta } = require('../dist/j6502-meta');
-const JM65 = require('../dist/jm65');
-
-const JM = JM65.J6502_Emulator;
+const JM = J6502_Emulator;
 
 test('LDA flags', t => {
     // Create rom
     let prg = new J6502_Program(0x10);
-    //let meta = new J6502_Meta(prg);
     prg.add('LDA_IMM', 0x00);
     prg.add('LDA_IMM', 0x79);
     prg.add('LDA_IMM', 0x80);
@@ -144,7 +142,7 @@ test('CPY flags 2', t => {
 })
 
 test('CPY flags 3', t => {
-    // Create rom
+    // Create roms
     let prg = new J6502_Program(0x10);
     //let meta = new J6502_Meta(prg);
     prg.add('LDY_IMM', 0x0);
@@ -290,7 +288,7 @@ test('ROL ABS flags', t => {
 
     // Run rom
     let sut = new JM();
-    let gs = new JM65.J6502_GenericStorage(1); 
+    let gs = new J6502_GenericStorage(1); 
     gs.connect(sut.getMemoryBus(), 0x1000); 
     sut.load(rom);    
 
@@ -374,7 +372,7 @@ test('Reset vector', t => {
 
     // Create emulator and run
     let sut = new JM();
-    let gs = new JM65.J6502_GenericStorage(2); // Only needs 2 bytes to hold the reset vector
+    let gs = new J6502_GenericStorage(2); // Only needs 2 bytes to hold the reset vector
     gs.write(0, 4); // Write 4 to address 0, which will be mapped to fffc later
     gs.write(1, 0); // Write 0 to address 1, which will be mapped to fffd later, making the contents 0x04 0x00, which will be read as 0x0004 (the LDA_IM 0xA0 instruction)
     gs.connect(sut.getMemoryBus(), 0xfffc); // Connect the 2 byte memory to where the CPU will look for the reset vector (FFFC, FFFD)
@@ -447,7 +445,7 @@ test('Simple write to GenericStorage', t => {
 
     // Create emulator and run
     let sut = new JM();
-    let gs = new JM65.J6502_GenericStorage(2); // 2 byte storage
+    let gs = new J6502_GenericStorage(2); // 2 byte storage
     gs.connect(sut.getMemoryBus(), 0x1000);
     sut.load(rom);
     sut.run();
@@ -471,8 +469,8 @@ test('Simple write to two GenericStorages', t => {
 
     // Create emulator and run
     let sut = new JM();
-    let gs1 = new JM65.J6502_GenericStorage(2); // 2 byte storage!
-    let gs2 = new JM65.J6502_GenericStorage(2);
+    let gs1 = new J6502_GenericStorage(2); // 2 byte storage!
+    let gs2 = new J6502_GenericStorage(2);
     gs1.connect(sut.getMemoryBus(), 0x1000); // map 2 byte storage to 0x1000 and 0x1001
     gs2.connect(sut.getMemoryBus(), 0x2000); // map 2 byte storage to 0x2000 and 0x2001
     sut.load(rom);
@@ -498,8 +496,8 @@ test('Simple load from two GenericStorages', t => {
 
     // Create emulator and run
     let sut = new JM();
-    let gs1 = new JM65.J6502_GenericStorage(1); // 1 byte storage!
-    let gs2 = new JM65.J6502_GenericStorage(1);
+    let gs1 = new J6502_GenericStorage(1); // 1 byte storage!
+    let gs2 = new J6502_GenericStorage(1);
     let buf1 = gs1.getBuffer();
     let buf2 = gs2.getBuffer();
     buf1.writeUInt8(6, 0) // Preload 6 into storage 1
