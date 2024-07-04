@@ -118,7 +118,7 @@ test('Syntax - all syntax flavors', t => {
         //console.log(i)
         t.is(a[i].name, name, i);
         t.deepEqual(a[i].data, data, i);
-    };   
+    };
 
     t.is(a.length, expected.length);
 

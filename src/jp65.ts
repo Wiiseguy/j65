@@ -99,9 +99,9 @@ class J6502_Parser {
                             // Label
                             let len = matched.size - 1;
                             if (len === 1) {
-                                data = prg.getLabelRel(data);
+                                data = prg.createLabelRel(data);
                             } else {
-                                data = prg.getLabel(data);
+                                data = prg.createLabel(data);
                             }
                         }
                         prg.add(matched.name, data);

@@ -6,7 +6,7 @@
  
 import { Instructions } from './j6502-instr';
 import { readFileSync, writeFileSync } from 'fs'
-import StreamBuffer = require('streambuf');
+import { StreamBuffer } from 'streambuf';
 
 class Instruction {
 	name: string;
@@ -18,15 +18,15 @@ class Instruction {
 }
 
 class DataInsertion {
-	data: number[];
-	constructor(bytes) {
+	data: number[] | Buffer;
+	constructor(bytes: number[] | Buffer) {
 		this.data = bytes;
 	}
 }
 
 class CursorMover {
-	address: string;
-	constructor(address) {
+	address: number;
+	constructor(address: number) {
 		this.address = address;
 	}
 }
@@ -85,7 +85,7 @@ class J6502_Program {
 
 	build(clamp = false) {
 		let prg = Buffer.alloc(this.size);
-		let buf = StreamBuffer(prg);
+		let buf = StreamBuffer.from(prg);
 		prg.fill(0x00); // reset buffer
 
 		for (let a of this.assembly) {
@@ -151,7 +151,7 @@ class J6502_Program {
 
 	put16(data: number) {
 		this.bufPos += 2;
-		this.assembly.push(new DataInsertion(data));
+		this.assembly.push(new DataInsertion([data & 0xff, data >> 8]));
 	}
 
 	putBytes(arr: (number[] | string)) {
@@ -183,11 +183,11 @@ class J6502_Program {
 		//console.log("Added label:", name, 'at', labels[name].toString(16));
 	}
 
-	getLabel(name) {
+	createLabel(name) {
 		return new Label(name);
 	}
 
-	getLabelRel(name) {
+	createLabelRel(name) {
 		return new RelativeLabel(name);
 	}
 
@@ -206,7 +206,7 @@ class J6502_Program {
 	}
 
 	// Moves relative to origin
-	moveTo(addr) {
+	moveTo(addr: number) {
 		this.bufPos = addr - this.origin;
 		this.assembly.push(new CursorMover(this.bufPos));
 	}

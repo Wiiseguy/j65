@@ -12,14 +12,14 @@
 import { readFileSync } from 'fs';
 import { inspect } from 'util';
 import { J6502_Emulator, J6502_GenericROM, J6502_GenericStorage } from './jm65';
-import StreamBuffer = require('streambuf');
+import { StreamBuffer } from 'streambuf';
 
 const JM = J6502_Emulator;
 
 function J6502_NES_Emulator() {
 
     this.load = function (buf) {
-        let sb = new StreamBuffer(buf);
+        let sb = StreamBuffer.from(buf);
 
         const mirrorMemory = false;
 

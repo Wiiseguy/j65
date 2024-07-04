@@ -12,7 +12,7 @@
 import { InstructionsByOp } from './j6502-instr'
 import { J6502_Program } from './j6502';
 import { EventEmitter } from 'stream';
-import StreamBuffer = require('streambuf');
+import { StreamBuffer } from 'streambuf';
 
 // TODO: rewrite to class
 function J6502_Emulator(opts = undefined) {
@@ -296,7 +296,7 @@ function J6502_Emulator(opts = undefined) {
 class J6502_Disassembler {
     disassemble(prg, start = 0) {
         const program = new J6502_Program();
-        const sb = new StreamBuffer(prg);
+        const sb = StreamBuffer.from(prg);
         sb.seek(start);
         while (!sb.isEOF()) {
             let op = sb.readByte();

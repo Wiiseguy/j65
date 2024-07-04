@@ -33,12 +33,12 @@ class J6502_Meta {
 		this.#prg.setLabel(L1);
 		this.#prg.add('ROL');
 		this.#prg.add('CMP_ABS', denominatorAddr);
-		this.#prg.add('BCC', this.#prg.getLabelRel(L2));
+		this.#prg.add('BCC', this.#prg.createLabelRel(L2));
 		this.#prg.add('SBC_ABS', denominatorAddr);
 		this.#prg.setLabel(L2);
 		this.#prg.add('ROL_ABS', numeratorAddr);
 		this.#prg.add('DEX');
-		this.#prg.add('BNE', this.#prg.getLabelRel(L1))
+		this.#prg.add('BNE', this.#prg.createLabelRel(L1))
 	}
 
 	push() {
@@ -65,7 +65,7 @@ class J6502_Meta {
 	}
 
 	jsr(labelName) {
-		this.#prg.add('JSR', this.#prg.getLabel(labelName));
+		this.#prg.add('JSR', this.#prg.createLabel(labelName));
 	}
 
 	// Mid level
@@ -78,7 +78,7 @@ class J6502_Meta {
 		this.#prg.add('STA_ABS_X', dstAddr); // store into RAM (0200 + x)
 		this.#prg.add('INX');
 		this.#prg.add('CPX_IMM', dataLength);
-		this.#prg.add('BNE', this.#prg.getLabelRel(newLabel));
+		this.#prg.add('BNE', this.#prg.createLabelRel(newLabel));
 	}
 
 }

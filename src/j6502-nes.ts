@@ -1,5 +1,5 @@
 import * as fs from 'fs';
-import * as StreamBuffer from 'streambuf';
+import { StreamBuffer } from 'streambuf';
 import { J6502_Program } from './j6502';
 import { J6502_Meta } from './j6502-meta';
 
@@ -83,7 +83,7 @@ function J6502_NES(prg) {
 		prg.add('STA_ABS', PPU_DATA);						// write to PPU
 		prg.add('INX');										// set index to next byte
 		prg.add('CPX_IMM', dataLength);					// if X = 32, all is copied
-		prg.add('BNE', prg.getLabelRel(newLabel));
+		prg.add('BNE', prg.createLabelRel(newLabel));
 	};
 
 	this.clearRAM = function () {
@@ -101,13 +101,13 @@ function J6502_NES(prg) {
 		prg.add('LDA_IMM', 0xfe);
 		prg.add('STA_ABS_X', SPR_START); // move sprites offscreen			
 		prg.add('INX');
-		prg.add('BNE', prg.getLabelRel('clear_ram_loop'));
+		prg.add('BNE', prg.createLabelRel('clear_ram_loop'));
 	};
 
 	this.importUtilities = function () {
 		prg.setLabel('wait_for_vblank');
 		prg.add('LDA_ABS', PPU_STATUS);
-		prg.add('BPL', prg.getLabelRel('wait_for_vblank'));
+		prg.add('BPL', prg.createLabelRel('wait_for_vblank'));
 		prg.add('RTS');
 	};
 
@@ -159,7 +159,7 @@ function J6502_NES(prg) {
 		let fileSize = SIZE_HEADER + SIZE_PRG + SIZE_CHR;
 		let rom = Buffer.alloc(fileSize);
 		rom.fill(0xff);
-		let sb = StreamBuffer(rom);
+		let sb = StreamBuffer.from(rom);
 
 		// Header (16 bytes) https://wiki.nesdev.com/w/index.php/INES
 		sb.writeString("NES");
